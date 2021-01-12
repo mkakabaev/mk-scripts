@@ -1,0 +1,50 @@
+// cSpell: disable
+{
+	"folders": [
+		{
+            "path": "../mk-scripts-dev",
+            "name": "dev"
+        },
+		{
+			"path": "."
+        },
+    ],
+    "settings": {
+
+        // just a temporary stuff to reduce distraction
+        "files.exclude": {
+            "LICENSE": true,
+            "**/.gitignore": true,
+        },
+
+        "python.formatting.provider": "black",
+        "python.formatting.blackArgs": [
+            "--line-length=130"
+        ],
+        
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+
+        // https://github.com/janjur/readable-pylint-messages/blob/master/README.md
+        "p11ython.linting.pylintArgs": [
+            "--disable=W0611",
+            "--disable=C0111", // missing-docstring            
+            "--disable=C0301", // line-too-long
+            "--disable=C0303", // trailing-whitespace
+            "--disable=C0330", // bad-continuation: to work properly with the 'black' formatter            
+            "--disable=R0903", // too-few-public-methods
+            "--disable=R0913", // too-many-arguments
+            "--disable=W6014", // unused-wildcard-import
+            "--disable=W0703", // broad-except
+            "--good-names=e,f,a,b,t,d,i,j,k,l,m,v,t,s,h,o,p,r,sb,w,x,y",            
+        ],
+
+        "python.linting.pylintCategorySeverity.refactor": "Information",
+        "python.linting.pylintCategorySeverity.convention": "Information",
+        "cSpell.words": [
+            "pylint",
+            "pync",
+            "pythonpath"
+        ],
+    }
+}
