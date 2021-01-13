@@ -70,5 +70,5 @@ class TimeCounter(ReprBuilderMixin):
     #     return time.perf_counter_ns() - self._start
 
     @property
-    def elapsed_duration(self) -> int:
+    def elapsed_duration(self) -> Duration:
         return Duration(ns=time.perf_counter_ns() - self._start)

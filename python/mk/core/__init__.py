@@ -16,7 +16,7 @@ from .assets import *
 __all__ = [
     "Console", "ConsoleStyle",
     "Path", "FSEntry", "File", "Directory",
-    "ToStringBuilder",
+    "ToStringBuilder", "ReprBuilderMixin",
     "Runner",
     "Script", "die", "success",
     "DateTime", "DateTimeFormat", "TimeCounter", "Duration", "DurationFormat",

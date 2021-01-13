@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cSpell: words uncommited
+# cSpell: words
 
 # class Git(Runner):
 #     def __init__(self, env, args):
@@ -8,7 +8,7 @@
 #         self.args += args
 
 #     @property
-#     def has_uncommited_changes(self):
+#     def has_uncommitted_changes(self):
 #         self.add_arg_pair2("--work-tree", self.env.git_root.subdirectory(".."))
 #         self.add_arg("status")
 #         self.add_arg("--porcelain")
@@ -20,4 +20,4 @@
 #         self.add_arg("commit")
 #         self.add_arg("-a")
 #         self.add_arg_pair("-m", "'{}'".format(message))
-#         self.run("Commiting to GIT")
+#         self.run("Committing to GIT")

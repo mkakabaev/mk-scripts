@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 # cSpell: words xcodebuild
 
-from enum import Enum
-from ..core import ReprBuilderMixin, Runner, die, ToStringBuilder, Console, File, Path, Directory
+from ..core import ReprBuilderMixin, Runner, die, ToStringBuilder, File, Path, Directory
 
 
 class Workspace(ReprBuilderMixin):

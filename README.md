@@ -6,7 +6,7 @@ Developed and used on macOS. An adaptation to other OSes is required.
 
 ## Installation
 
-### Add path to `PYTHONPATH`
+### Add the library path to `PYTHONPATH`
 
 **Sample for .zshrc**
 

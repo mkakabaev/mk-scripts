@@ -7,30 +7,31 @@ import atexit
 import os
 import time
 import importlib.util
-from enum import Enum
-from rich.rule import Rule
 from runpy import run_path
+from rich.rule import Rule
 from .console import Console, ConsoleStyle
 from .notification import NotificationConfig, NotificationSound, show_notification
-from .fs import Path, Directory, File
+from .fs import Path, Directory
 from .time import TimeCounter
 from .assets import Assets
 
 # core folder: os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))
 
+
 class _SignalHandler:
     def __init__(self, signal_no, handler):
-        def do_handle(signal_no, stack_frame):
+        def do_handle(s_no, stack_frame):
             self.new_handler()
             if callable(self.old_handler):
-                self.old_handler(signal_no, stack_frame)
+                self.old_handler(s_no, stack_frame)
             elif self.old_handler == signal.SIG_DFL:
-                signal.signal(signal_no, signal.SIG_DFL)
-                os.kill(os.getpid(), signal_no)  # Rethrow signal
+                signal.signal(s_no, signal.SIG_DFL)
+                os.kill(os.getpid(), s_no)  # Rethrow signal
 
         self.new_handler = handler
         self.old_handler = signal.getsignal(signal_no)
         signal.signal(signal_no, do_handle)
+
 
 class ExitActionConfig:
     def __init__(
@@ -68,7 +69,7 @@ class _Stack:
 
     @property
     def name_ntf(self):
-        return f"{self._get_name()}" # no braces. notification utility does not like it :(
+        return f"{self._get_name()}"  # no braces. notification utility does not like it :(
 
     @property
     def current(self) -> _StackItem:
@@ -98,6 +99,10 @@ class Script:
     # def register_exit_handler(cls, handler):
     #     assert handler is not None
     #     cls._exit_handlers.append(handler)
+
+    _stack = None
+
+    _original_except_hook = None
 
     exception_exit_action_config = ExitActionConfig(
         notification_config=NotificationConfig(
@@ -159,7 +164,7 @@ class Script:
         #     handler(reason)
         
         # print the final message and flush again 
-        elapsed_duration = cls._stack.current.time_counter       
+        elapsed_duration = cls._stack.current.time_counter.elapsed_duration       
         Console.write_empty_line()
         Console.write(
             f"{cls._stack.name} {message}. Execution time: {elapsed_duration}", 
@@ -266,12 +271,13 @@ class Script:
             cls.die(f"Unable to import module [{path}]: {e}")
 
 
-
 Script._init()  # pylint: disable=protected-access
 # Script.register_exit_handler(lambda reason: Console.flush())
 
+
 def die(message: str = None):
     Script.die(message)
+
 
 def success(message: str = None):
     Script.success(message=message)

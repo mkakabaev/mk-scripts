@@ -26,7 +26,7 @@
         "python.linting.pylintEnabled": true,
 
         // https://github.com/janjur/readable-pylint-messages/blob/master/README.md
-        "p11ython.linting.pylintArgs": [
+        "python.linting.pylintArgs": [
             "--disable=W0611",
             "--disable=C0111", // missing-docstring            
             "--disable=C0301", // line-too-long

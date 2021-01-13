@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 # cSpell: words popen bgcolor
 
-import os
-import collections.abc
 from enum import Enum
 import rich.console
 import rich.style
 from .misc import Safe
+
 
 class ConsoleStyle(Enum):
     SECTION_HEADER = 1
@@ -14,6 +13,7 @@ class ConsoleStyle(Enum):
     FATAL_ERROR = 3
     SUCCESS = 4
     # RUN_STATUS = 5
+
 
 class ConsoleStyleConfig:
 
@@ -33,6 +33,7 @@ class ConsoleStyleConfig:
             self._rich_style = rich.style.Style(color=self.color, bold=self.bold, bgcolor=self.background_color)
         return self._rich_style
 
+
 class Console:
 
     _prev_line_empty = True
@@ -48,18 +49,21 @@ class Console:
 
     _status = None
 
+    _rc = None
+    _rcl = None
+
     @classmethod
     def _init(cls):
 
-        # underlaying console processor. https://rich.readthedocs.io/en/latest/index.html
-        cls._rcl = rich.console.Console( # pylint: disable=invalid-name
+        # underlying console processor. https://rich.readthedocs.io/en/latest/index.html
+        cls._rcl = rich.console.Console(  # pylint: disable=invalid-name
             highlight=False, 
             markup=False,
             log_path=False,
             record=True,
             width=100
         )
-        cls._rc = rich.console.Console( # pylint: disable=invalid-name
+        cls._rc = rich.console.Console(  # pylint: disable=invalid-name
             highlight=False, 
             markup=False,
             log_path=False
@@ -113,7 +117,7 @@ class Console:
             style_config = cls._resolve_style(style)
             cls._rc.print(
                 text, 
-                style=Safe.conditional(style_config, lambda: style_config.get_rich_style()) # pylint: disable=unnecessary-lambda
+                style=Safe.conditional(style_config, lambda: style_config.get_rich_style())  # pylint: disable=unnecessary-lambda
             )
 
         if log_output:
@@ -188,4 +192,5 @@ class Console:
         cls.stop_status()
         cls.flush()
 
-Console._init() # pylint: disable=protected-access
+
+Console._init()  # pylint: disable=protected-access

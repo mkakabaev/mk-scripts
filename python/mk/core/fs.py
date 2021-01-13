@@ -15,6 +15,7 @@ from .to_string_builder import ReprBuilderMixin, ToStringBuilder
 from .console import Console
 from ._internal import int_die
 
+
 # @functools.total_ordering
 class Path:
 
@@ -118,15 +119,15 @@ class Path:
     
     @property
     def base_name(self) -> str:
-        'Base path name: filename.ext'
+        """Base path name: filename.ext"""
         return os.path.basename(self._path)
 
     @property
     def file_name(self) -> str:
-        'File name withot extension'
+        """File name without extension"""
         return os.path.splitext(os.path.basename(self._path))[0]
 
-    def has_extension(self, extension: str) -> str:
+    def has_extension(self, extension: str) -> bool:
         e = os.path.splitext(self._path)[1]
         return e == extension  # mktodo: case insensitive comparison?
 
@@ -296,7 +297,6 @@ class Directory(FSEntry):
     def is_system(self):
         return False
 
-
     def list(self, skip_system_objects=True):
         try:
             result = []
@@ -310,4 +310,3 @@ class Directory(FSEntry):
                 return result
         except Exception as e:
             int_die(f'{self}: unable to list the directory: {e}')
-        

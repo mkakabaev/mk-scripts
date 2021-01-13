@@ -4,6 +4,7 @@
 import collections.abc
 from typing import Callable, Any
 
+
 def _resolve_callable(value):
     if callable(value):
         return value()
@@ -22,9 +23,9 @@ class Safe:
 
     @staticmethod
     def first_available(values, default=None):
-        '''
+        """
             Get first available (not None) value from the list or default one
-        '''
+        """
         if not Safe.is_sequence(values):
             values = [values]
         

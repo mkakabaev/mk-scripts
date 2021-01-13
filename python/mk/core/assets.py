@@ -5,6 +5,7 @@ import inspect
 import pathlib
 from .fs import Directory, Path
 
+
 class IconAsset:
     def __init__(self, path):
         self.path = Path(path)
@@ -13,7 +14,10 @@ class IconAsset:
     def __fspath__(self):
         return self.path.fspath        
 
+
 class Assets:
+
+    _directory = None
 
     @classmethod
     def _init(cls):
@@ -21,7 +25,7 @@ class Assets:
         cls._directory = Directory(p, must_exist=True, create_if_needed=False)
 
     @classmethod
-    def get_icon(cls, icon_name: str) -> Path:
+    def get_icon(cls, icon_name: str) -> IconAsset:
         return IconAsset(Path([cls._directory, f'{icon_name}.png']))
 
 

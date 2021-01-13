@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 # cSpell: words Sosumi pync icns
 
-import sys
-import signal
 from enum import Enum
 import pync
-from .console import Console, ConsoleStyle
 from .fs import Path
 from .misc import Safe
+
 
 # valid for macOS currently
 class NotificationSound(Enum):
@@ -23,6 +21,7 @@ class NotificationConfig:
     ):
         self.sound = sound
         self.icon = icon
+
 
 def show_notification(
     message: str,

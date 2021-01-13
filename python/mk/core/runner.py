@@ -6,7 +6,6 @@ import subprocess
 import shlex
 import os
 import re
-from typing import Pattern, AnyStr
 from rich.table import Table
 import rich.box
 
@@ -32,7 +31,7 @@ class RunnerResult(ReprBuilderMixin):
         self.code = code
         self.runner = runner
 
-    def search(self, pattern: Pattern[AnyStr], group: int = 0, tag: str = None, message: str = None) -> str:
+    def search(self, pattern, group: int = 0, tag: str = None, message: str = None) -> str:
         m = re.search(pattern, self.output)
         if m is None:
             int_die(
@@ -50,8 +49,8 @@ class RunnerResult(ReprBuilderMixin):
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.add_value(self.runner.title, quoted=True)        
 
-class Runner:
 
+class Runner:
     def __init__(self, command, args=None, title: str = None):
         self.command = _stringify_value(command)
         self.args = Safe.to_list(args, _stringify_value)
@@ -84,23 +83,23 @@ class Runner:
             table.add_column()
             self._table = table
 
-        def expand_value(value):
-            if isinstance(value, bool):
-                return "✓" if value else "-" 
+        def expand_value(v):
+            if isinstance(v, bool):
+                return "✓" if v else "-"
 
-            if isinstance(value, collections.Mapping):
+            if isinstance(v, collections.Mapping):
                 t = Table(show_header=False, box=rich.box.MINIMAL, pad_edge=False, show_edge=False, border_style="dim")
                 t.add_column()
                 t.add_column()
-                for key1, value1 in value.items():
+                for key1, value1 in v.items():
                     t.add_row(f"{key1}", expand_value(value1))
                 return t
-            if Safe.is_sequence(value):
+            if Safe.is_sequence(v):
                 t = Table(show_header=False, box=None, padding=0)
-                for value1 in value:
+                for value1 in v:
                     t.add_row(expand_value(value1))
                 return t                
-            return f"{value}"
+            return f"{v}"
                 
         table.add_row(name, expand_value(value))
 
