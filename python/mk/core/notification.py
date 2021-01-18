@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # cSpell: words Sosumi pync icns
 
+from typing import Optional
 from enum import Enum
 import pync
 from .fs import Path
@@ -25,7 +26,7 @@ class NotificationConfig:
 
 def show_notification(
     message: str,
-    config: NotificationConfig,
+    config: Optional[NotificationConfig],
     title: str = None,
     subtitle: str = None,
 ):

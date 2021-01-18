@@ -21,7 +21,9 @@ class Assets:
 
     @classmethod
     def _init(cls):
-        p = pathlib.Path(inspect.getframeinfo(inspect.currentframe()).filename).resolve().parent.parent.parent.parent.joinpath('assets')
+        frame = inspect.currentframe()
+        assert frame is not None
+        p = pathlib.Path(inspect.getframeinfo(frame).filename).resolve().parent.parent.parent.parent.joinpath('assets')
         cls._directory = Directory(p, must_exist=True, create_if_needed=False)
 
     @classmethod

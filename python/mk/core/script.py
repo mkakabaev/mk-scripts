@@ -200,7 +200,7 @@ class Script:
             details = f"{exc_type.__name__}({value})"
         cls._on_exit2(cls.exception_exit_action_config, message, details)
         if cls._original_except_hook is not None:
-            cls._original_except_hook(exc_type, value, traceback)
+            cls._original_except_hook(exc_type, value, traceback)  #pylint: disable=not-callable
 
     @classmethod
     def die(cls, message):

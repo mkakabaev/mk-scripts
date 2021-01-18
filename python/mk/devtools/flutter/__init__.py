@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # cSpell: words 
 
-from typing import Dict
+from typing import Dict, Optional
 from enum import Enum
 from .assets import *
 from .project import Project
@@ -74,7 +74,7 @@ class _FlutterRunner:
             self._runner.add_args(["-t", main_module])
             self.add_hdr("Main module", main_module)
 
-    def add_environment(self, env: Dict[str, str]):
+    def add_environment(self, env: Optional[Dict[str, str]]):
         if env is not None:
             for name, value in env.items():                
                 self._runner.add_args(f"--dart-define={name}={value}")

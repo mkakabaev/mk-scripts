@@ -24,6 +24,7 @@
         
         "python.linting.enabled": true,
         "python.linting.pylintEnabled": true,
+        "python.analysis.typeCheckingMode": "off",
 
         // https://github.com/janjur/readable-pylint-messages/blob/master/README.md
         "python.linting.pylintArgs": [

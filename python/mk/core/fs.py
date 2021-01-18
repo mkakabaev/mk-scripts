@@ -26,7 +26,7 @@ class Path:
         p = os.path.normpath(os.path.expanduser(self._path_from_object(path)))
         if not p:
             raise Exception('Path cannot be empty')
-        self._path = p
+        self._path = str(p)
 
     # accepting almost everything path-like
     @staticmethod
@@ -88,7 +88,7 @@ class Path:
 
     @property
     def exists(self) -> bool:
-        return os.path.exists(self._path)
+        return os.path.exists(self.fspath)
 
     @property
     def exists_as_link(self) -> bool:
@@ -104,7 +104,7 @@ class Path:
 
     @property
     def is_absolute(self):
-        return pathlib.Path(self._path).is_absolute() 
+        return pathlib.Path(self.fspath).is_absolute() 
 
     @property
     def is_root(self) -> bool:
@@ -120,12 +120,12 @@ class Path:
     @property
     def base_name(self) -> str:
         """Base path name: filename.ext"""
-        return os.path.basename(self._path)
+        return str(os.path.basename(self._path))
 
     @property
     def file_name(self) -> str:
         """File name without extension"""
-        return os.path.splitext(os.path.basename(self._path))[0]
+        return str(os.path.splitext(os.path.basename(self._path))[0])
 
     def has_extension(self, extension: str) -> bool:
         e = os.path.splitext(self._path)[1]
@@ -209,7 +209,7 @@ class File(FSEntry):
         sb.add('mode', self._mode)
 
     def read_all(self):
-        f = open(self.path, "r") or int_die(f"{self}: Unable to open file for reading")
+        f = open(self.path.fspath, "r") or int_die(f"{self}: Unable to open file for reading")
         result = f.read()
         f.close()
         return result
@@ -218,7 +218,7 @@ class File(FSEntry):
         try:
             if self._mode != FileMode.WRITE: 
                 self.close()            
-                self._file = open(self.path, "w")
+                self._file = open(self.path.fspath, "w")
                 self._mode = FileMode.WRITE
         except Exception as e:    
             int_die(f"{self}: Unable to open file for writing: {e}")        
@@ -227,7 +227,7 @@ class File(FSEntry):
         try:
             if self._mode != FileMode.APPEND: 
                 self.close()            
-                self._file = open(self.path, "a")
+                self._file = open(self.path.fspath, "a")
                 self._mode = FileMode.APPEND
         except Exception as e:    
             int_die(f"{self}: Unable to open file for appending: {e}")        
@@ -253,7 +253,7 @@ class File(FSEntry):
         try:
             if log:
                 Console.write(f"{self}: copying to {destination}")
-            shutil.copy(self, destination)
+            shutil.copy(self.path.fspath, destination)
         except Exception as e:
             int_die(f"{self}: Unable to copy myself to {destination}: {e}")
 
@@ -276,7 +276,7 @@ class Directory(FSEntry):
 
     def make_current(self):
         try:
-            os.chdir(self.path)
+            os.chdir(self.path.fspath)
         except Exception as e:
             int_die(f"{self}: Unable to make myself the current directory: {e}")
 
@@ -287,7 +287,7 @@ class Directory(FSEntry):
             int_die(f'{self}: the entry exists in file system but it is not a directory')
         if create_if_needed:
             try:
-                os.makedirs(self.path)            
+                os.makedirs(self.path.fspath)            
                 return           
             except Exception as e:
                 int_die(f'{self}: unable to create directory: {e}')

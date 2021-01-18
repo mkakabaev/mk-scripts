@@ -75,7 +75,7 @@ class Console:
             cls.write(f"{style}", style=style)
 
     @classmethod
-    def _resolve_style(cls, style: ConsoleStyle):  # pylint: disable=unused-argument
+    def _resolve_style(cls, style):  
         if style is not None:
             try:
                 return cls._styles[style]

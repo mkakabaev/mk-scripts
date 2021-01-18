@@ -20,8 +20,8 @@ def _stringify_value(value):
     if isinstance(value, str):
         return value
     if isinstance(value, os.PathLike):  # Path and file entries are also os.PathLike
-        return os.fspath(value)
-    return value
+        return str(os.fspath(value))
+    return str(value)
 
 
 class RunnerResult(ReprBuilderMixin):
@@ -185,7 +185,7 @@ class Runner:
         p_result = p.communicate()
         if p.returncode:
             int_die(f"Running {Safe.first_available([self.title, cmd])} failed with exit code {p.returncode}")
-        r = p_result[0]
+        r = str(p_result[0])
         if r is not None:
             r = r.strip()
         Console.write_empty_line()
