@@ -61,7 +61,7 @@ class Console:
             markup=False,
             log_path=False,
             record=True,
-            width=100
+            width=120
         )
         cls._rc = rich.console.Console(  # pylint: disable=invalid-name
             highlight=False, 
@@ -108,20 +108,19 @@ class Console:
         cls, 
         text, 
         style: ConsoleStyle = None, 
-        log_output: bool = True,
-        console_output: bool = True,
+        to_display: bool = True,
     ):              
         cls._prev_line_empty = text is None or len(text) == 0 or text.endswith("\n")
     
-        if console_output:
+        if to_display:
             style_config = cls._resolve_style(style)
             cls._rc.print(
                 text, 
                 style=Safe.conditional(style_config, lambda: style_config.get_rich_style())  # pylint: disable=unnecessary-lambda
             )
 
-        if log_output:
-            cls._log(text)
+        # we log always
+        cls._log(text)
     
     @classmethod
     def stop_status(cls):

@@ -56,7 +56,7 @@ class _XcodebuildRunner:
     def run(self):
         if self._root_dir is not None:
             self._root_dir.make_current()
-        self._runner.run(console_output=False, notify_completion=True)
+        self._runner.run(display_output=False, notify_completion=True)
 
 
 class Xcode(ReprBuilderMixin):
@@ -148,6 +148,7 @@ class Xcode(ReprBuilderMixin):
         r.add_arg_pair("-archivePath", archive_path, "Source archive")
         r.add_arg_pair("-exportOptionsPlist", plist_path, "Options")
         r.add_arg_pair("-exportPath", output_dir_path, "Output")
+        r.add_args("-allowProvisioningUpdates") # to enable automatic signing and getting fresh profiles
         r.run()
 
     def export_app_store(

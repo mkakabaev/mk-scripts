@@ -46,6 +46,11 @@ class Path:
 
     @staticmethod
     def _join(path1, path2):
+
+        # for convenience, ignore empty or null second path component
+        if path2 == "" or path2 is None:
+            return os.path.join(path1)
+
         # prevent os.join wrong behavior on root path processing. Tested on macOS only!
         if os.path.isabs(path2):
             path2 = os.path.splitdrive(path2)[1]
@@ -122,10 +127,26 @@ class Path:
         """Base path name: filename.ext"""
         return str(os.path.basename(self._path))
 
+    def relative(self, level: int = 0) -> str:
+        '''relative path starting base_name and up to [level] levels '''
+        components = [self.base_name]
+        if level > 0:
+            parent = self.parent
+            while level > 0 and parent is not None:
+                components.insert(0, parent.base_name)
+                level -= 1
+                parent = parent.parent
+        return Path(components)
+
     @property
     def file_name(self) -> str:
         """File name without extension"""
         return str(os.path.splitext(os.path.basename(self._path))[0])
+
+    @property
+    def extension(self) -> str:
+        """Extension with dot, if any"""
+        return os.path.splitext(self._path)[1]
 
     def has_extension(self, extension: str) -> bool:
         e = os.path.splitext(self._path)[1]
@@ -256,6 +277,14 @@ class File(FSEntry):
             shutil.copy(self.path.fspath, destination)
         except Exception as e:
             int_die(f"{self}: Unable to copy myself to {destination}: {e}")
+
+    def move_to(self, destination: os.PathLike, log: bool = False):
+        try:
+            if log:
+                Console.write(f"{self}: moving to {destination}")
+            shutil.move(self.path.fspath, destination)
+        except Exception as e:
+            int_die(f"{self}: Unable to move myself to {destination}: {e}")
 
     @property
     def is_system(self):

@@ -130,11 +130,9 @@ class Runner:
     def run(
         self,
         catch_output: bool = True,        
-        log_output: bool = True,
-        console_output: bool = True,
+        display_output: bool = True,
         notify_completion: bool = False,
     ):
-        cmd = self._full_shell_cmd()
         t = TimeCounter()
 
         # print header
@@ -144,6 +142,10 @@ class Runner:
         if self._table is not None:
             Console.write_raw(self._table)
         Console.write_empty_line()
+
+        # prepare and output the command line
+        cmd = self._full_shell_cmd()
+        Console.write(f"CMD> {cmd}\n", to_display=display_output)
 
         # run with output catch
         if catch_output:
@@ -162,7 +164,7 @@ class Runner:
             with p.stdout:
                 for line_b in iter(p.stdout.readline, b""):
                     line = line_b.decode("utf-8")
-                    Console.write(line.strip(), log_output=log_output, console_output=console_output)
+                    Console.write(line.strip(), to_display=display_output)
                     outputs.append(line)
                     # Console.update_status(f"{status} {t.elapsed_duration}")
 

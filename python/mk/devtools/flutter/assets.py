@@ -29,12 +29,28 @@ class _ImageSize:
 
 
 class _Image(ReprBuilderMixin):
+
     def __init__(self, path):
+        self.checked = False
         self.path = Path(path)
-        self.name = self.path.base_name
         img = Image.open(self.path.fspath)
         self.size = _ImageSize(img.size[0], img.size[1])
-        self.checked = False
+        self.name = self.path.base_name
+        m = re.search(r"(.+)@([1234][.]?[05]?x)$", self.path.file_name)
+        if m is not None:
+            self.scale_postfix = m.group(2)
+            self.base_name = m.group(1)
+        else:
+            self.scale_postfix = ""
+            self.base_name = self.path.file_name
+                
+    @property
+    def has_scale_postfix(self):
+        return self.scale_postfix != ""
+
+    @property
+    def rel_path(self):
+        return self.path.relative()
 
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.typename = "flutter.AssetImage"
@@ -43,53 +59,51 @@ class _Image(ReprBuilderMixin):
 
 
 class _ImageSubFolder(ReprBuilderMixin):
-    def __init__(self, name, scale, directory=None) -> None:
+    def __init__(self, name, scale) -> None:
         self.name = name
         self.scale = scale
-        self.directory = directory
-        if directory is not None:
-            self.load_directory(directory)
         self.images = {}
+        self.directory = None
 
     def configure_repr_builder(self, sb: ToStringBuilder):
-        sb.typename = "flutter.AssetImageDir"
-        sb.add_value(self.name)
+        sb.typename = None
+        sb.add_value(Path(self.name)) # let it be formatted as a relative path
 
-    def load_directory(self, directory):
+    def load(self, directory, issues):
         self.directory = directory
         for fs_entry in directory.list():
             name = fs_entry.path.base_name
-            if isinstance(fs_entry, Directory):
-                Console.write(
-                    f"{self}: unexpected directory {fs_entry} found",
-                    style=ConsoleStyle.WARNING,
-                )
-            elif isinstance(fs_entry, File):
-                try:
-                    if name.endswith(".png"):
-                        self.images[name] = _Image(fs_entry.path)
-                    else:
-                        raise Exception("Unknown file")
-                except Exception as e:
-                    Console.write(
-                        f"{self}: unable to load {fs_entry}: {e}",
-                        style=ConsoleStyle.WARNING,
-                    )
-            else:
-                die(f"{self}: have no idea how to handle {fs_entry}")
+            p_name = fs_entry.path.relative()
 
-    def check(self, parent_image):
+            # Nested directoriesare no allowed
+            if isinstance(fs_entry, Directory):
+                issues.add(f"{self}: Unexpected directory {p_name} found")
+                continue
+
+            # Image files
+            if isinstance(fs_entry, File):
+                try:
+                    image = _Image(fs_entry.path)
+                    if image.has_scale_postfix:
+                        issues.add(f"{self}: {p_name} contains scale postfix in the name")
+                    else:
+                        self.images[name] = image
+                except Exception as e:
+                    issues.add(f"{self}: Unable to load image {p_name}: {e}")
+                continue
+
+            # all the rest 
+            issues.add(f"have no idea how to handle {fs_entry}")
+
+    def check(self, parent_image, issues):
+
         try:
             image = self.images[parent_image.name]
         except KeyError:
-            Console.write(
-                f"{self}: unable to find {parent_image.name}",
-                style=ConsoleStyle.WARNING,
-            )
-            return False
+            issues.add(f"{self}: Missed {parent_image.rel_path}")
+            return
 
         image.checked = True
-        has_issues = False
 
         # comparing sizes:
         expected_size = parent_image.size.scaled(self.scale)
@@ -100,40 +114,38 @@ class _ImageSubFolder(ReprBuilderMixin):
             or image.size.h < expected_size.h - thr
             or image.size.h > expected_size.h + thr
         ):
-            Console.write(
-                f"{self}: size mismatch for {image}: should be ({self.scale} * {parent_image.size}) ~~> {expected_size} ± {thr}",
-                style=ConsoleStyle.WARNING,
-            )
-            has_issues = True
+            issues.add(f"{self}: Size mismatch for {image}: should be ({self.scale} * {parent_image.size}) ~~> {expected_size} ± {thr}")
 
-        return not has_issues
-
-    def detect_unchecked(self):
-        has_issues = False
+    def detect_unchecked(self, issues):
         for image in self.images.values():
             if not image.checked:
-                Console.write(
-                    f"{self}: extra image {image} found: consider removal",
-                    style=ConsoleStyle.WARNING,
-                )
-                has_issues = True
+                issues.add(f"{self}: extra image {image} found: consider removal")
 
-        return not has_issues
+
+class _Issues:
+    '''Simplest way to simplify issues handling code. As of now it just print issues as they are'''
+    def __init__(self, owner):
+        self.is_empty = True
+        self.owner = owner
+
+    def add(self, issue):
+        Console.write(f"{self.owner}: {issue}", style=ConsoleStyle.WARNING)
+        self.is_empty = False
 
 
 class Assets(ReprBuilderMixin):
+
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.typename = "flutter.Assets"
 
     def check_images(self, images_dir):  # pylint: disable=too-many-branches
-        has_issues = False
         root_dir = Directory(images_dir, must_exist=True, create_if_needed=False)
         Console.write_section_header(f"{self}: Checking images at {root_dir.path}")
+        issues = _Issues(self)
 
         # find folders and libs
         folders = {
-            t[0]: _ImageSubFolder(t[0], t[1])
-            for t in [
+            t[0]: _ImageSubFolder(name=t[0], scale=t[1]) for t in [
                 ("1.5x", 1.5),
                 ("2.0x", 2.0),
                 ("3.0x", 3.0),
@@ -145,57 +157,39 @@ class Assets(ReprBuilderMixin):
 
         for fs_entry in root_dir.list():
             name = fs_entry.path.base_name
+            p_name = fs_entry.path.relative()
 
+            # handle directories
             if isinstance(fs_entry, Directory):
-                try:
-                    folders[name].load_directory(fs_entry)
-                except Exception as _:
-                    Console.write(
-                        f"{self}: {fs_entry} does not seem to be an image sub-folder",
-                        style=ConsoleStyle.WARNING,
-                    )
-                    has_issues = True
+                if name in folders:
+                    try:
+                        folders[name].load(fs_entry, issues)
+                    except Exception as e:
+                        issues.add(f"Unable to load {fs_entry}: {e}")
+                else:
+                    issues.add(f"Directory {p_name} does not seem to be an image sub-folder")
                 continue
 
+            # handle plain files 
             if isinstance(fs_entry, File):
-
                 try:
-                    if name.endswith(".png"):
-
-                        image = _Image(fs_entry.path)
-
-                        m = re.search(r"@([0-9.])x[.]\w+$", name)
-                        if m is not None:
-                            Console.write(
-                                f"{self}: It seems you forgot to move {image.name} to sub-folder",
-                                style=ConsoleStyle.WARNING,
-                            )
-                            has_issues = True
-                            continue
-
-                        image_files[name] = image
+                    image = _Image(fs_entry.path)
+                    if image.has_scale_postfix:
+                        issues.add(f"It seems you forgot to move {p_name} to sub-folder '{image.scale_postfix}'")
                     else:
-                        raise Exception("Unknown file")
+                        image_files[name] = image
                 except Exception as e:
-                    has_issues = True
-                    Console.write(
-                        f"{self}: unable to load {fs_entry}: {e}",
-                        style=ConsoleStyle.WARNING,
-                    )
+                    issues.add(f"Unable to load image {p_name}: {e}")
                 continue
 
-            has_issues = True
-            die(f"{self}: have no idea how to handle {fs_entry}")
+            # all the rest 
+            issues.add(f"have no idea how to handle {fs_entry}")
 
         # get existing folders
         existing_folders = []
         for f in folders.values():
             if f.directory is None:
-                has_issues = True
-                Console.write(
-                    f"{self}: {root_dir.path} does not contain {f.name} sub-folder",
-                    style=ConsoleStyle.WARNING,
-                )
+                issues.add(f"{root_dir.path} does not contain {f.name} sub-folder")
             else:
                 existing_folders.append(f)
 
@@ -204,16 +198,70 @@ class Assets(ReprBuilderMixin):
             image = image_files[name]
             # Console.write(f"Checking {image}")
             for f in existing_folders:
-                if not f.check(image):
-                    has_issues = True
+                f.check(image, issues)
 
         # notify extra images
         for f in existing_folders:
-            if not f.detect_unchecked():
-                has_issues = True
+            f.detect_unchecked(issues)
 
-        if has_issues:
-            Console.write("Done (few issues found)", style=ConsoleStyle.WARNING)
-        else:
+        if issues.is_empty:
             Console.write("Done (no issues found)")
-        return not has_issues
+            return True
+
+        Console.write("Done (few issues found)", style=ConsoleStyle.WARNING)
+        return False
+
+    def distribute_images(self, images_dir): 
+        '''Put all name@Y.Zx.ext images in Y.Zx/name.ext'''
+        root_dir = Directory(images_dir, must_exist=True, create_if_needed=False)
+        Console.write_section_header(f"{self}: Distributing images at {root_dir.path}")
+        issues = _Issues(self)  
+
+        # fixing typical errors
+        typo_fixes = {
+            '4x': "4.0x",
+            '2x': "2.0x",
+            '3x': "3.0x",
+            '@1.5x': "1.5x",
+            '@1,5x': "1.5x",
+            '@15x': "1.5x",
+            '@15': "1.5x",
+        }
+
+        for fs_entry in root_dir.list():
+            p_name = fs_entry.path.relative()
+
+            # handle plain files 
+            if isinstance(fs_entry, File):
+                try:
+                    image = _Image(fs_entry.path)
+                except Exception as e:
+                    issues.add(f"Unable to load image {p_name}: {e}")
+                    continue                    
+
+                if not image.has_scale_postfix: 
+                    continue
+
+
+                # finding a destination
+                dest_path = root_dir.path + typo_fixes.get(image.scale_postfix, image.scale_postfix)
+                if not dest_path.exists_as_directory:
+                    issues.add(f"No destination sub-folder found for {image}")
+                    continue
+                full_dest_path = dest_path + f"{image.base_name}{image.path.extension}"
+
+                # Moving
+                if full_dest_path.exists:
+                    Console.write(f'{self}: Overwriting {p_name} in {full_dest_path.relative(1)}')
+                else:
+                    Console.write(f'{self}: Moving {p_name} to {full_dest_path.relative(1)}')
+                fs_entry.move_to(full_dest_path)
+
+
+        if issues.is_empty:
+            Console.write("Done (no issues found)")
+            return True
+
+        Console.write("Done (few issues found)", style=ConsoleStyle.WARNING)
+        return False
+

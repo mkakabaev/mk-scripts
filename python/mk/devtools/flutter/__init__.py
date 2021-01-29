@@ -87,7 +87,7 @@ class _FlutterRunner:
         if self._project is not None:
             self._project.make_directory_current()
         self._runner.run(
-            console_output=False, 
+            display_output=False, 
             notify_completion=True
         )
 
