@@ -8,10 +8,10 @@ from .fs import Path
 from .misc import Safe
 
 
-# valid for macOS currently
+# valid for macOS currently. Copy your sounds to ~/Library/Sounds. I personally use old (prior to BigSur) Sosumi.aiff and Glass.aiff 
 class NotificationSound(Enum):
-    ERROR = "Sosumi"
-    SUCCESS = "Glass"
+    ERROR = "MKError"
+    SUCCESS = "MKSuccess"
 
 
 class NotificationConfig:

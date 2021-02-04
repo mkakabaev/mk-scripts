@@ -2,7 +2,7 @@
 
 A collection of misc scripts for my everyday tasks. Automation for Xcode and Flutter building processes, file management, archiving, logging, whatever.
 
-Developed and used on macOS. An adaptation to other OSes is required.
+Developed and used on macOS. An adaptation to other OS is required.
 
 ## Installation
 
@@ -24,3 +24,9 @@ export PYTHONPATH="/Users/murad/dir1/../dirN/mk-scripts/python"
 
 ```zsh
 python3.8 -m pip install rich pync pillow
+
+```
+
+### Sounds
+
+Copy your favorite sounds as `MKError.{ext}` and `MKSuccess.{ext}` to `~/Library/Sounds`  
