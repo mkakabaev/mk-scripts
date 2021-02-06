@@ -222,10 +222,10 @@ class Assets(ReprBuilderMixin):
             '4x': "4.0x",
             '2x': "2.0x",
             '3x': "3.0x",
-            '@1.5x': "1.5x",
-            '@1,5x': "1.5x",
-            '@15x': "1.5x",
-            '@15': "1.5x",
+            '1.5x': "1.5x",
+            '1,5x': "1.5x",
+            '15x': "1.5x",
+            '15': "1.5x",
         }
 
         for fs_entry in root_dir.list():
