@@ -6,6 +6,7 @@ import sys
 import atexit
 import os
 import time
+import re
 import importlib.util
 from runpy import run_path
 from rich.rule import Rule
@@ -16,7 +17,10 @@ from .time import TimeCounter
 from .assets import Assets
 
 # core folder: os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))
-
+# import inspect
+# print(inspect.currentframe())
+# print(inspect.getfile(inspect.currentframe()))
+# print(f"---{sys.argv}---") 
 
 class _SignalHandler:
     def __init__(self, signal_no, handler):
@@ -48,7 +52,10 @@ class _StackItem:
         self.path = Path(path)
         self.directory = Directory(self.path.parent)
         self.time_counter = TimeCounter()
-
+    
+    @property
+    def name(self):
+        return re.sub( r"[.]py$", "", self.path.base_name).upper()
 
 class _Stack:
     def __init__(self):
@@ -61,14 +68,14 @@ class _Stack:
         del self.items[-1]
 
     def _get_name(self):
-        return " ▶︎ ".join(map(lambda i: i.path.base_name, self.items))
+        return " >> ".join(map(lambda i: i.name, self.items))
 
     @property
-    def name(self):
+    def display_path(self):
         return f"[{self._get_name()}]" 
 
     @property
-    def name_ntf(self):
+    def display_name_ntf(self):
         return f"{self._get_name()}"  # no braces. notification utility does not like it :(
 
     @property
@@ -162,22 +169,25 @@ class Script:
         # call exit handlers
         # for handler in cls._exit_handlers:
         #     handler(reason)
-        
+
+        elapsed_duration = cls._stack.current.time_counter.elapsed_duration   
+
         # print the final message and flush again 
-        elapsed_duration = cls._stack.current.time_counter.elapsed_duration       
-        Console.write_empty_line()
-        Console.write(
-            f"{cls._stack.name} {message}. Execution time: {elapsed_duration}", 
-            style=config.console_style,
-        )
-        if details is not None:
-            Console.write(f"{details}", style=config.console_style) 
+        if config.console_style is not None:            
+            Console.write_empty_line()
+            Console.write(
+                f"{cls._stack.display_path} {message}. Execution time: {elapsed_duration}", 
+                style=config.console_style,
+            )
+            if details is not None:
+                Console.write(f"{details}", style=config.console_style) 
+
         Console.finalize()
 
-        if do_show_notification:
+        if do_show_notification and config.notification_config is not None:
             show_notification(
                 f"Execution time: {elapsed_duration}",
-                title=f"{cls._stack.name_ntf} {message}",
+                title=f"{cls._stack.display_name_ntf}: {message}",
                 subtitle=details,
                 config=config.notification_config,
             )
@@ -196,7 +206,7 @@ class Script:
             message = "is interrupted by user"
             details = None
         else:
-            message = f"is interrupted by uncaught exception"
+            message = "is interrupted by uncaught exception"
             details = f"{exc_type.__name__}({value})"
         cls._on_exit2(cls.exception_exit_action_config, message, details)
         if cls._original_except_hook is not None:
@@ -264,7 +274,7 @@ class Script:
             spec = importlib.util.spec_from_file_location(name, p.fspath)
             module = importlib.util.module_from_spec(spec)
             sys.modules[spec.name] = module 
-            spec.loader.exec_module(module)
+            spec.loader.exec_module(module) 
             return module
 
         except Exception as e:

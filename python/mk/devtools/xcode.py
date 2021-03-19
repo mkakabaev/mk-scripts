@@ -181,6 +181,7 @@ class Xcode(ReprBuilderMixin):
         r.add_args("-exportArchive")
         r.add_arg_pair("-archivePath", archive_path, "Source archive")
         r.add_arg_pair("-exportOptionsPlist", plist_path, "Options")
+        r.add_args("-allowProvisioningUpdates") # to enable automatic signing and getting fresh profiles
         r.run()
 
 # cSpell: disable

@@ -54,7 +54,7 @@ class _Image(ReprBuilderMixin):
 
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.typename = "flutter.AssetImage"
-        sb.add_value(self.name)
+        sb.add_value(self.name, quoted=True)
         sb.add_value(self.size)
 
 
@@ -155,7 +155,7 @@ class Assets(ReprBuilderMixin):
 
         image_files = {}
 
-        for fs_entry in root_dir.list():
+        for fs_entry in root_dir.list(sort=True):
             name = fs_entry.path.base_name
             p_name = fs_entry.path.relative()
 

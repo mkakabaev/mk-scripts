@@ -326,16 +326,20 @@ class Directory(FSEntry):
     def is_system(self):
         return False
 
-    def list(self, skip_system_objects=True):
+    def list(self, skip_system_objects=True, sort=False):
         try:
             result = []
             for (_, dirnames, filenames) in os.walk(self.path):
+                if sort:
+                    dirnames = sorted(dirnames)
                 for d in dirnames:
                     result.append(Directory([self.path, d]))
+                if sort:
+                    filenames = sorted(filenames)
                 for f in filenames:
                     file = File([self.path, f])
                     if not skip_system_objects or not file.is_system:
                         result.append(file)
-                return result
+                return result # no recurse yet
         except Exception as e:
             int_die(f'{self}: unable to list the directory: {e}')

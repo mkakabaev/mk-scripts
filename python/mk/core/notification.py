@@ -26,7 +26,7 @@ class NotificationConfig:
 
 def show_notification(
     message: str,
-    config: Optional[NotificationConfig],
+    config: NotificationConfig,
     title: str = None,
     subtitle: str = None,
 ):

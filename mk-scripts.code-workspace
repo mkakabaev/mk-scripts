@@ -45,7 +45,8 @@
         "cSpell.words": [
             "pylint",
             "pync",
-            "pythonpath"
+            "pythonpath",
+            "pyright"
         ],
     }
 }
