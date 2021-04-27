@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# cSpell: words xcodebuild
+# cSpell: words xcodebuild xcodeproj unsubscriptable
 
+from typing import Union
 from ..core import ReprBuilderMixin, Runner, die, ToStringBuilder, File, Path, Directory
-
 
 class Workspace(ReprBuilderMixin):
     def __init__(self, path):
@@ -25,6 +25,29 @@ class Workspace(ReprBuilderMixin):
     def directory(self):
         return Directory(self._path.parent)
 
+
+class Project(ReprBuilderMixin):
+    def __init__(self, path):
+        p = Path(path)
+        self._path = p
+        if p.has_extension(".xcodeproj") and p.exists_as_directory:
+            pass
+        else:
+            die(f"No project found at path {p} ")
+
+    def configure_repr_builder(self, sb: ToStringBuilder):
+        sb.typename = "xcode.Project"
+        sb.add_value(f"{self._path.file_name}")
+
+    @property
+    def base_name(self):
+        return self._path.base_name
+
+    @property
+    def directory(self):
+        return Directory(self._path.parent)
+
+WorkspaceOrProject = Union[Workspace, Project] # pylint: disable=unsubscriptable-object
 
 class _XcodebuildRunner:
     def __init__(self, title):
@@ -50,6 +73,20 @@ class _XcodebuildRunner:
         self.add_arg_pair("-workspace", workspace.base_name, "Workspace")
         self.add_hdr("Directory", self._root_dir.path)
 
+    def set_project(self, project: Project):
+        assert isinstance(project, Project)
+        self._root_dir = project.directory
+        self.add_arg_pair("-project", project.base_name, "Project")
+        self.add_hdr("Directory", self._root_dir.path)
+
+    def set_workspace_or_project(self, workspace_or_project:  WorkspaceOrProject): 
+        if isinstance(workspace_or_project, Workspace):
+            self.set_workspace(workspace_or_project)
+        elif isinstance(workspace_or_project, Project):
+            self.set_project(workspace_or_project)
+        else:
+            die("workspace or project is required")
+
     def set_scheme(self, scheme):
         self.add_arg_pair("-scheme", scheme, "Scheme")
 
@@ -69,28 +106,28 @@ class Xcode(ReprBuilderMixin):
     def configure_repr_builder(self, sb: ToStringBuilder):
         pass
 
-    def clean(self, workspace: Workspace, scheme: str):
+    def clean(self, workspace_or_project:  WorkspaceOrProject, scheme: str):  
         r = _XcodebuildRunner(title=f"{self}: Cleaning")
-        r.set_workspace(workspace)
+        r.set_workspace_or_project(workspace_or_project)
         r.set_scheme(scheme)
         r.add_args("clean")
         r.run()
 
     def archive(
         self,
-        workspace: Workspace,
+        workspace_or_project:  WorkspaceOrProject, 
         scheme: str,
         archive_file,
         clean_first: bool = True,
     ):
         if clean_first:
-            self.clean(workspace=workspace, scheme=scheme)
+            self.clean(workspace_or_project, scheme=scheme)
 
         archive_path = Path(archive_file)
         Directory(archive_path.parent).ensure_exists()
 
         r = _XcodebuildRunner(title=f"{self}: Archive")
-        r.set_workspace(workspace)
+        r.set_workspace_or_project(workspace_or_project)
         r.set_scheme(scheme)
         r.add_arg_pair("-archivePath", archive_path, "Result archive")
         r.add_args("archive")
@@ -191,7 +228,6 @@ class Xcode(ReprBuilderMixin):
 #     SourceRoot = ""
 #     ProjectDir = ""
 #     InfoPListPath = ""
-
 #     @classmethod
 #     def check_is_running(cls):
 #         if not cls.IsRunning:

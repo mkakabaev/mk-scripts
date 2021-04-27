@@ -28,7 +28,7 @@ class DateTime(ReprBuilderMixin):
 
 class DurationFormat(Enum):
     S = 1
-    MS = 1
+    MS = 2
 
 
 class Duration:

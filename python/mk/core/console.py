@@ -4,7 +4,9 @@
 from enum import Enum
 import rich.console
 import rich.style
+import rich.text
 from .misc import Safe
+from .time import Duration, DurationFormat, TimeCounter
 
 
 class ConsoleStyle(Enum):
@@ -33,6 +35,18 @@ class ConsoleStyleConfig:
             self._rich_style = rich.style.Style(color=self.color, bold=self.bold, bgcolor=self.background_color)
         return self._rich_style
 
+
+class _TimedTitle(rich.console.RichCast):
+    def __init__(self, title) -> None:
+        super().__init__()
+        self.title = title
+        self.time_counter = TimeCounter()
+
+    def __rich__(self):
+        t = rich.text.Text()
+        t.append(f"[{self.time_counter.elapsed_duration.format(DurationFormat.S)}] ", style="status.spinner")
+        t.append(self.title, style="status.spinner")
+        return t;  
 
 class Console:
 
@@ -131,7 +145,7 @@ class Console:
     @classmethod
     def start_status(cls, title):
         cls.stop_status()
-        cls._status = cls._rc.status(title)
+        cls._status = cls._rc.status(_TimedTitle(title))
         cls._status.start()
 
     # @classmethod

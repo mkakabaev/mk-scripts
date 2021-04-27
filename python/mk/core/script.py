@@ -175,19 +175,19 @@ class Script:
         # print the final message and flush again 
         if config.console_style is not None:            
             Console.write_empty_line()
-            Console.write(
-                f"{cls._stack.display_path} {message}. Execution time: {elapsed_duration}", 
-                style=config.console_style,
-            )
+
+            name = cls._stack.display_path
+            s = f"{name} {message}. Execution time {elapsed_duration}"
             if details is not None:
-                Console.write(f"{details}", style=config.console_style) 
+                s = f"{s} Details: {details}" 
+            Console.write(s, style=config.console_style)
 
         Console.finalize()
 
         if do_show_notification and config.notification_config is not None:
             show_notification(
-                f"Execution time: {elapsed_duration}",
-                title=f"{cls._stack.display_name_ntf}: {message}",
+                f"Execution time {elapsed_duration}",
+                title=f"{cls._stack.display_name_ntf} {message}",
                 subtitle=details,
                 config=config.notification_config,
             )

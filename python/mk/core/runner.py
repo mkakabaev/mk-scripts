@@ -174,7 +174,7 @@ class Runner:
             if result_code:
                 int_die(f"Running '{Safe.first_available([self.title, cmd])}' failed with exit code {result_code}.")
             if notify_completion:
-                Console.write(f"■ Completed. Elapsed time: {t.elapsed_duration}")                
+                Console.write(f"■ Completed. Elapsed time {t.elapsed_duration}")                
             Console.write_empty_line()
             return RunnerResult(
                 output="".join(outputs).strip(), 

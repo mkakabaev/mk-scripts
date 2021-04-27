@@ -187,7 +187,7 @@ class Flutter(ReprBuilderMixin):
         if scheme is None:
             scheme = flavor if flavor is not None else "Runner"
         xcode = Xcode()
-        xcode.archive(workspace=workspace, scheme=scheme, archive_file=archive_file)
+        xcode.archive(workspace, scheme=scheme, archive_file=archive_file)
 
         # do ad-hoc export
         if do_export_ad_hoc:

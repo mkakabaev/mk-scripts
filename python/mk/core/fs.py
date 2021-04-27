@@ -32,6 +32,9 @@ class Path:
     @staticmethod
     def _path_from_object(p):
         
+        if p is None:
+            return ""
+
         if isinstance(p, str):
             return p
         
@@ -177,7 +180,7 @@ class FSEntry(ReprBuilderMixin, metaclass=abc.ABCMeta):
     def reveal(self):
         runner = Runner("open", ["-R", self])
         runner.title = f"Reveal {self}..."
-        runner.run()
+        runner.run(display_output = False)
 
     @property
     @abc.abstractmethod
