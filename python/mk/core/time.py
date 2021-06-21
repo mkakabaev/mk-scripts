@@ -54,7 +54,7 @@ class Duration:
         return f"{t:03}"
 
     def __repr__(self):
-        return f"[{self.format(DurationFormat.MS)}]"
+        return f"[{self.format(DurationFormat.S)}]"
 
 
 class TimeCounter(ReprBuilderMixin):

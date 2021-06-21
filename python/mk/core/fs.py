@@ -124,7 +124,14 @@ class Path:
         if p == self._path:  # not sure if if fully platform independent
             return None
         return Path(p)
-    
+
+    def get_parent(self, level: int = 1):
+        result = self
+        while level > 0 and result is not None:
+            result = result.parent
+            level -= 1
+        return result
+
     @property
     def base_name(self) -> str:
         """Base path name: filename.ext"""

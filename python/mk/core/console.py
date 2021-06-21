@@ -46,11 +46,11 @@ class _TimedTitle(rich.console.RichCast):
         t = rich.text.Text()
         t.append(f"[{self.time_counter.elapsed_duration.format(DurationFormat.S)}] ", style="status.spinner")
         t.append(self.title, style="status.spinner")
-        return t;  
+        return t 
 
 class Console:
 
-    _prev_line_empty = True
+    _prev_line_empty = False
 
     _styles = {
         ConsoleStyle.SECTION_HEADER: ConsoleStyleConfig(bold=True),

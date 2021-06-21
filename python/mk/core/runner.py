@@ -138,7 +138,7 @@ class Runner:
         # print header
         Console.write_empty_line()
         if self.title is not None:
-            Console.write_section_header(f"▶︎ {self.title}")
+            Console.write_section_header(f"▸ {self.title}")
         if self._table is not None:
             Console.write_raw(self._table)
         Console.write_empty_line()
@@ -151,7 +151,7 @@ class Runner:
         if catch_output:
             outputs = []
             
-            status = Safe.conditional(self.title, f"Running '{self.title}'...", "Running...")
+            status = Safe.conditional(self.title, f"{self.title}...", "Running...")
             Console.start_status(status)
 
             p = subprocess.Popen(
