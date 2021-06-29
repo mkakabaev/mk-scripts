@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cSpell: words 
+# cSpell: words unsubscriptable
 
 from typing import Dict, Optional
 from enum import Enum
@@ -74,7 +74,7 @@ class _FlutterRunner:
             self._runner.add_args(["-t", main_module])
             self.add_hdr("Main module", main_module)
 
-    def add_environment(self, env: Optional[Dict[str, str]]):
+    def add_environment(self, env: Optional[Dict[str, str]]): # pylint: disable=unsubscriptable-object
         if env is not None:
             for name, value in env.items():                
                 self._runner.add_args(f"--dart-define={name}={value}")

@@ -8,15 +8,13 @@ import functools
 import shutil
 import pathlib
 from enum import Enum
-
+from typing import Callable
 
 from .runner import Runner 
 from .to_string_builder import ReprBuilderMixin, ToStringBuilder
 from .console import Console
 from ._internal import int_die
 
-
-# @functools.total_ordering
 class Path:
 
     def __init__(self, path):
@@ -137,7 +135,7 @@ class Path:
         """Base path name: filename.ext"""
         return str(os.path.basename(self._path))
 
-    def relative(self, level: int = 0) -> str:
+    def relative(self, level: int = 0):
         '''relative path starting base_name and up to [level] levels '''
         components = [self.base_name]
         if level > 0:
@@ -295,6 +293,18 @@ class File(FSEntry):
             shutil.move(self.path.fspath, destination)
         except Exception as e:
             int_die(f"{self}: Unable to move myself to {destination}: {e}")
+
+    def patch(self, f: Callable[[int, str], str]):
+        lines = self.read_all().split("\n")
+        outlines = []
+        for idx, line in enumerate(lines):
+            patched_line = f(idx, line)
+            if patched_line is not None:
+                outlines.append(patched_line)
+        dest = self # File(self.path.fspath + ".b")
+        dest.open_for_writing()
+        dest.write("\n".join(outlines))
+        dest.close()
 
     @property
     def is_system(self):

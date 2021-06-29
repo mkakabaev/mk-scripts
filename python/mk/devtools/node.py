@@ -39,7 +39,7 @@ class NodeJS(ReprBuilderMixin):
     def configure_repr_builder(self, sb: ToStringBuilder):
         pass
 
-    def npm_run(
+    def npm_run( # pylint: disable=no-self-use
         self,
         project: Project,
         args = None

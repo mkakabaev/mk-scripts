@@ -132,6 +132,9 @@ class Runner:
         catch_output: bool = True,        
         display_output: bool = True,
         notify_completion: bool = False,
+
+        # the input. Will be converted to UTF8
+        input_data: str = None 
     ):
         t = TimeCounter()
 
@@ -143,9 +146,18 @@ class Runner:
             Console.write_raw(self._table)
         Console.write_empty_line()
 
-        # prepare and output the command line
+        # prepare and output the command line and input
         cmd = self._full_shell_cmd()
         Console.write(f"CMD> {cmd}\n", to_display=display_output)
+        if input_data:
+            Console.write(f"INPUT> {input_data}\n", to_display=display_output)
+
+
+        # prepare input
+        if input_data:
+            input_data = input_data.encode("utf-8")
+        else:
+            input_data = None
 
         # run with output catch
         if catch_output:
@@ -161,12 +173,20 @@ class Runner:
                 shell=True,
                 stdin=subprocess.PIPE,
             )  # bufsize=1, , shell=True
-            with p.stdout:
-                for line_b in iter(p.stdout.readline, b""):
-                    line = line_b.decode("utf-8")
+
+            if input_data:
+                p_result = p.communicate(input=input_data)                
+                lines = str(p_result[0].decode("utf-8")).split("\n")
+                for line in lines:
                     Console.write(line.strip(), to_display=display_output)
                     outputs.append(line)
-                    # Console.update_status(f"{status} {t.elapsed_duration}")
+            else:
+                with p.stdout:
+                    for line_b in iter(p.stdout.readline, b""):
+                        line = line_b.decode("utf-8")
+                        Console.write(line.strip(), to_display=display_output)
+                        outputs.append(line)
+                        # Console.update_status(f"{status} {t.elapsed_duration}")
 
             result_code = p.wait()
             Console.stop_status()
@@ -184,7 +204,7 @@ class Runner:
 
         # run without output catching
         p = subprocess.Popen(cmd, stdin=subprocess.PIPE, shell=True)
-        p_result = p.communicate()
+        p_result = p.communicate(input=input_data)
         if p.returncode:
             int_die(f"Running {Safe.first_available([self.title, cmd])} failed with exit code {p.returncode}")
         r = str(p_result[0])

@@ -179,7 +179,7 @@ class Script:
             name = cls._stack.display_path
             s = f"{name} {message}. Execution time {elapsed_duration}"
             if details is not None:
-                s = f"{s}, Details: {details}" 
+                s = f"{s} • {details}" 
             Console.write(s, style=config.console_style)
             Console.write_empty_line()
 
