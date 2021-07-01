@@ -35,12 +35,39 @@ class BuildMode(Enum):
         return self.info["file_name"]
 
 
+class _AppNamer:
+    def __init__(self) -> None:
+        self.prefix = "app"
+        self.flavor = None
+        self.build_mode = None
+        self.project_version = ""
+
+    def get(self, postfix = "", include_version = False):
+        components = []
+        components.append(self.prefix)
+        if self.flavor:
+            components.append(self.flavor)            
+        if self.build_mode:
+            components.append(self.build_mode)            
+        if include_version and self.project_version:
+            components.append(self.project_version)            
+        return "-".join(components) + postfix
+
+    @property
+    def flutter_app_bundle_folder(self):
+        components = []
+        if self.flavor:
+            components.append(self.flavor)            
+        if self.build_mode:
+            components.append(self.build_mode.capitalize())            
+        return "".join(components)
+
 class _FlutterRunner:
     def __init__(self, title):
         self._runner = Runner("flutter")
         self._runner.title = f"Flutter: {title}"
-        self._app_name = ["app"]
         self._project = None
+        self.namer = _AppNamer();
 
     def add_args(self, args):
         self._runner.add_args(args)
@@ -52,16 +79,17 @@ class _FlutterRunner:
         assert isinstance(project, Project)
         self._project = project
         self.add_hdr("Project", project)
+        self.namer.project_version = project.version
 
     def set_flavor(self, flavor):
         if flavor is not None:
             self._runner.add_args(["--flavor", flavor])
-            self._app_name.append(flavor)
+            self.namer.flavor = flavor
             self.add_hdr("Flavor", flavor)
 
     def set_build_mode(self, build_mode):
         self._runner.add_args(build_mode.compile_flag)
-        self._app_name.append(build_mode.file_name)
+        self.namer.build_mode = build_mode.file_name
         self.add_hdr("Build mode", build_mode.display_name)
 
     def set_analyze_size(self, flag):
@@ -79,9 +107,6 @@ class _FlutterRunner:
             for name, value in env.items():                
                 self._runner.add_args(f"--dart-define={name}={value}")
             self.add_hdr("Environment", env)
-
-    def get_app_name(self, postfix):
-        return "-".join(self._app_name) + postfix
 
     def run(self):
         if self._project is not None:
@@ -160,7 +185,7 @@ class Flutter(ReprBuilderMixin):
         do_upload_app_store = False
         if archive_dir is not None: 
             do_archive = True
-            archive_file = File([archive_dir, r.get_app_name(".xcarchive")])
+            archive_file = File([archive_dir, r.namer.get(postfix=".xcarchive", include_version=True)])
             archive_file.remove()
             if ad_hoc_export:
                 do_export_ad_hoc = True
@@ -244,11 +269,12 @@ class Flutter(ReprBuilderMixin):
         r.set_main_module(main_module)
         r.add_environment(environment)
 
-        app_name = Path(r.get_app_name(".apk"))
+        src_app_name = r.namer.get(".apk")
+        dst_app_name = r.namer.get(".apk", include_version=True)
         output_d = Directory(output_dir)
-        build_f = File([project.path, "build", "app", "outputs", "flutter-apk", app_name])
-        output_f = File([output_d.path, app_name])
-        r.add_hdr("Build file name", app_name)
+        build_f = File([project.path, "build", "app", "outputs", "flutter-apk", src_app_name])
+        output_f = File([output_d.path, dst_app_name])
+        r.add_hdr("Build file name", dst_app_name)
         r.add_hdr("Output", output_d.path)
 
         # Prepare output folders, cd to project, build the project
@@ -257,7 +283,63 @@ class Flutter(ReprBuilderMixin):
         r.run()
 
         # copy the result
-        Console.write_section_header(f"Copying {app_name} to {output_f.path}...")
+        Console.write_section_header(f"Copying {src_app_name} to {output_f.path}...")
+        build_f.ensure_exists()
+        build_f.copy_to(output_f)
+
+        # check the result and reveal
+        output_f.ensure_exists()
+        if reveal_result:
+            output_f.reveal()
+
+    def build_app_bundle(
+        self,
+        project: Project,
+        output_dir,
+        flavor=None,
+        build_mode: BuildMode = BuildMode.RELEASE,
+        main_module=None,
+        environment: Dict[str, str] = None,
+        reveal_result: bool = True,
+        clean_before: bool = True,
+        # analyze_size: bool = False
+    ):
+
+        # check state and args
+        assert isinstance(project, Project)
+
+        # clean
+        if clean_before:
+            self.clean(project=project)
+
+        # configure
+        r = _FlutterRunner(title="Build app bundle")
+        r.add_args(["build", "appbundle"])
+        r.set_project(project)
+        r.set_flavor(flavor)
+        r.set_build_mode(build_mode)
+        r.set_analyze_size(False)
+        r.set_main_module(main_module)
+        r.add_environment(environment)
+
+        # No --build-number XXX, --build-name=X.Y.Z yet. Values are taken from project version string
+        src_app_name = r.namer.get(".aab")
+        dst_app_name = r.namer.get(".aab", include_version=True)
+        output_d = Directory(output_dir)
+        build_f = File([project.path, "build", "app", "outputs", "bundle", r.namer.flutter_app_bundle_folder, src_app_name])
+        output_f = File([output_d.path, dst_app_name])
+        r.add_hdr("Build file name", dst_app_name)
+        r.add_hdr("Output", output_d.path)
+
+        # flutter build appbundle -d all --flavor prod --build-number XXX --release "lib/main_prod.dart"
+
+        # Prepare output folders, cd to project, build the project
+        output_d.ensure_exists()
+        output_f.remove()
+        r.run()
+
+        # copy the result
+        Console.write_section_header(f"Copying {src_app_name} to {output_f.path}...")
         build_f.ensure_exists()
         build_f.copy_to(output_f)
 

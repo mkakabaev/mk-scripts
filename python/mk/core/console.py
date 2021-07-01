@@ -5,6 +5,7 @@ from enum import Enum
 import rich.console
 import rich.style
 import rich.text
+import rich.color
 from .misc import Safe
 from .time import Duration, DurationFormat, TimeCounter
 
@@ -21,8 +22,8 @@ class ConsoleStyleConfig:
 
     def __init__(
         self, 
-        color: str = None, 
-        background_color: str = None, 
+        color = None, 
+        background_color = None, 
         bold: bool = False
     ):        
         self._rich_style = None
@@ -53,11 +54,12 @@ class Console:
     _prev_line_empty = False
 
     _styles = {
-        ConsoleStyle.SECTION_HEADER: ConsoleStyleConfig(bold=True),
+        ConsoleStyle.SECTION_HEADER: ConsoleStyleConfig(color=rich.color.Color.from_ansi(153), bold=True), # 
         ConsoleStyle.SUCCESS: ConsoleStyleConfig(color="bright_green"),
-        ConsoleStyle.WARNING: ConsoleStyleConfig(color="bright_yellow"),
+        ConsoleStyle.WARNING: ConsoleStyleConfig(color=rich.color.Color.from_ansi(226)), # color="bright_yellow"),
         # ConsoleStyle.FATAL_ERROR: ConsoleStyleConfig(color="bright_white", background_color="bright_red",),
-        ConsoleStyle.FATAL_ERROR: ConsoleStyleConfig(color="bright_red"),
+        # ConsoleStyle.FATAL_ERROR: ConsoleStyleConfig(color="bright_red"),
+        ConsoleStyle.FATAL_ERROR: ConsoleStyleConfig(background_color=rich.color.Color.from_ansi(160), color="bright_white"),
         # ConsoleStyle.RUN_STATUS: ConsoleStyleConfig(background_color="grey3", color="bright_white"),        
     }
 
