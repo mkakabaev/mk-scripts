@@ -62,6 +62,7 @@ class _AppNamer:
             components.append(self.build_mode.capitalize())            
         return "".join(components)
 
+
 class _FlutterRunner:
     def __init__(self, title):
         self._runner = Runner("flutter")
@@ -200,7 +201,7 @@ class Flutter(ReprBuilderMixin):
                 app_store_upload_directory = Directory([archive_dir, "app_store_upload"])
                 app_store_upload_directory.remove()
 
-        # Run flutter. Stop after if no xcode processing is ordered
+        # Run flutter. On completion stop unless archiving is ordered
         r.run()
         if not do_archive:
             if reveal_result:
@@ -208,7 +209,7 @@ class Flutter(ReprBuilderMixin):
             return
 
         # archive the project
-        workspace = project.xcode_workspace
+        workspace = project.xcode_ios_workspace
         if scheme is None:
             scheme = flavor if flavor is not None else "Runner"
         xcode = Xcode()
@@ -238,6 +239,114 @@ class Flutter(ReprBuilderMixin):
 
         if reveal_result:
             File(archive_file).reveal()
+
+    def build_mac( 
+        self,
+        project: Project,
+        flavor=None,
+        build_mode: BuildMode = BuildMode.RELEASE,
+        main_module=None,
+        environment: Dict[str, str] = None,
+        clean_before: bool = True,
+        analyze_size: bool = False,        
+        archive_dir=None,  # Xcode archive, optional, but required for any exporting
+        scheme: str = None,  # Xcode scheme
+        app_export: bool = False,
+        # app_store_export: bool = False,
+        # app_store_upload: bool = False,
+        reveal_result: bool = True
+    ):  # pylint: disable=too-many-locals, too-many-statements
+        # check state and args
+        assert isinstance(project, Project)
+
+        # clean flutter
+        if clean_before:
+            self.clean(project=project)
+
+        # configure and run
+        r = _FlutterRunner(title="Build macOS")
+        r.add_args(["build", "macos"])
+        r.set_project(project)
+        r.set_flavor(flavor)
+        r.set_build_mode(build_mode)
+        r.set_analyze_size(analyze_size)
+        r.set_main_module(main_module)
+        r.add_environment(environment)
+        r.add_hdr('App build', app_export)
+        # r.add_hdr('AppStore build', app_store_export)
+        # r.add_hdr('Upload to AppStore', app_store_upload)
+
+        # configure xcode stuff
+        archive_file = None
+        path_to_reveal = None
+        # app_store_directory = None
+        # app_store_upload_directory = None
+        # do_export_app_store = False
+        # do_upload_app_store = False
+
+        do_archive = False
+        if archive_dir is not None: 
+            do_archive = True
+            archive_file = File([archive_dir, r.namer.get(postfix=".xcarchive", include_version=True)])
+            archive_file.remove()
+            path_to_reveal = archive_file;
+
+        app_directory = None
+        if app_export:
+            if not do_archive: 
+                die("<archive_dir> is required for <app_export> option")
+            app_directory = Directory([archive_dir, "app"])
+            app_directory.remove()
+            path_to_reveal = app_directory;
+
+        # Not implemented yet
+        # if app_store_export:
+        #     do_export_app_store = True
+        #     app_store_directory = Directory([archive_dir, "app_store"])
+        #     app_store_directory.remove()                
+        # if app_store_upload:
+        #     do_upload_app_store = True
+        #     app_store_upload_directory = Directory([archive_dir, "app_store_upload"])
+        #     app_store_upload_directory.remove()
+
+        # Run flutter. On completion stop unless archiving is ordered
+        r.run()
+        if not do_archive:
+            return
+
+        # archive the project
+        workspace = project.xcode_macos_workspace
+        if scheme is None:
+            scheme = flavor if flavor is not None else "Runner"
+        xcode = Xcode()
+        xcode.archive(workspace, scheme=scheme, archive_file=archive_file)
+
+        # do app export
+        if app_export:
+            xcode.export_mac_application(
+                archive_file=archive_file,
+                output_dir=app_directory,
+            )
+
+        # Not implemented yet
+
+        # # do app-store export
+        # if do_export_app_store:
+        #     xcode.export_app_store( 
+        #         archive_file=archive_file,
+        #         output_dir=app_store_directory,
+        #     )
+
+        # # do upload to app store
+        # if do_upload_app_store:
+        #     xcode.export_app_store(
+        #         archive_file=archive_file,
+        #         output_dir=app_store_upload_directory,
+        #         is_upload=True
+        #     )        
+
+        if reveal_result:
+            File(path_to_reveal).reveal()
 
     def build_apk(
         self,

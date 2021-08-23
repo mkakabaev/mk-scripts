@@ -52,9 +52,17 @@ class Project(ReprBuilderMixin):
         return self._description
 
     @property
-    def xcode_workspace(self) -> XcodeWorkspace:
+    def xcode_ios_workspace(self) -> XcodeWorkspace:
         return XcodeWorkspace(self.path + "ios/Runner.xcworkspace")
 
     @property
     def ios_app(self) -> Directory:
         return Directory(self.path + "build/ios/iphoneos/Runner.app")
+
+    @property
+    def xcode_macos_workspace(self) -> XcodeWorkspace:
+        return XcodeWorkspace(self.path + "macos/Runner.xcworkspace")
+
+    # @property
+    # def mac_app(self) -> Directory:
+    #     return Directory(self.path + "build/ios/iphoneos/Runner.app")

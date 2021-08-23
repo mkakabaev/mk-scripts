@@ -107,7 +107,7 @@ class _ImageSubFolder(ReprBuilderMixin):
 
         # comparing sizes:
         expected_size = parent_image.size.scaled(self.scale)
-        thr = math.ceil(1 * self.scale)
+        thr = math.ceil(1.5 * self.scale)
         if (
             image.size.w < expected_size.w - thr
             or image.size.w > expected_size.w + thr

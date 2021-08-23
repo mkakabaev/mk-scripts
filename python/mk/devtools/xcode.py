@@ -11,7 +11,7 @@ class Workspace(ReprBuilderMixin):
         if p.has_extension(".xcworkspace") and p.exists_as_directory:
             pass
         else:
-            die(f"No workspace found at path {p} ")
+            die(f"No workspace found at path {p}")
 
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.typename = "xcode.Workspace"
@@ -163,10 +163,12 @@ class Xcode(ReprBuilderMixin):
         )
         options_file.close()
 
-    def export_ad_hoc(
+    def _export_local(
         self,
         archive_file,
         output_dir,
+        method,
+        title
     ):
         archive_path = Path(archive_file)
         output_dir_path = Path(output_dir)
@@ -177,16 +179,41 @@ class Xcode(ReprBuilderMixin):
 
         # Create options file
         plist_path = Path([output_dir_path, "ExportOptions.plist"])
-        self.make_export_options_file(output_path=plist_path, method="ad-hoc")
+        self.make_export_options_file(output_path=plist_path, method=method)
 
         # export
-        r = _XcodebuildRunner(title=f"{self}: Export AdHoc")
+        r = _XcodebuildRunner(title=f"{self}: {title}")
         r.add_args("-exportArchive")
         r.add_arg_pair("-archivePath", archive_path, "Source archive")
         r.add_arg_pair("-exportOptionsPlist", plist_path, "Options")
         r.add_arg_pair("-exportPath", output_dir_path, "Output")
         r.add_args("-allowProvisioningUpdates") # to enable automatic signing and getting fresh profiles
         r.run()
+
+
+    def export_mac_application(
+        self,
+        archive_file,
+        output_dir,
+    ):
+        self._export_local(
+            archive_file=archive_file,
+            output_dir=output_dir, 
+            method="mac-application", 
+            title="Export Mac Application"
+        )
+
+    def export_ad_hoc(
+        self,
+        archive_file,
+        output_dir,
+    ): 
+        self._export_local(
+            archive_file=archive_file,
+            output_dir=output_dir, 
+            method="ad-hoc", 
+            title="Export AdHoc"
+        )
 
     def export_app_store(
         self,
