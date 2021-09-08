@@ -7,8 +7,7 @@ import rich.style
 import rich.text
 import rich.color
 from .misc import Safe
-from .time import Duration, DurationFormat, TimeCounter
-
+from .time import Duration, DurationFormat, TimeCounter, script_time_counter
 
 class ConsoleStyle(Enum):
     SECTION_HEADER = 1
@@ -36,7 +35,6 @@ class ConsoleStyleConfig:
             self._rich_style = rich.style.Style(color=self.color, bold=self.bold, bgcolor=self.background_color)
         return self._rich_style
 
-
 class _TimedTitle(rich.console.RichCast):
     def __init__(self, title) -> None:
         super().__init__()
@@ -45,7 +43,9 @@ class _TimedTitle(rich.console.RichCast):
 
     def __rich__(self):
         t = rich.text.Text()
-        t.append(f"[{self.time_counter.elapsed_duration.format(DurationFormat.S)}] ", style="status.spinner")
+        ed1 = self.time_counter.elapsed_duration.format(DurationFormat.S);
+        ed2 = script_time_counter.elapsed_duration.format(DurationFormat.S);
+        t.append(f"[{ed1} of {ed2}] ", style="status.spinner")
         t.append(self.title, style="status.spinner")
         return t 
 

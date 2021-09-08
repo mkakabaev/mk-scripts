@@ -76,7 +76,7 @@ class _Stack:
 
     @property
     def display_name_ntf(self):
-        return f"{self._get_name()}"  # no braces. notification utility does not like it :(
+        return f"📜{self._get_name()}"  # no braces. notification utility does not like it :(
 
     @property
     def current(self) -> _StackItem:
@@ -88,6 +88,7 @@ class _Stack:
         
 
 class Script:
+
     @classmethod
     def _init(cls):        
         cls._stack = _Stack()
@@ -177,8 +178,8 @@ class Script:
             Console.write_empty_line()
 
             name = cls._stack.display_path
-            s = f"{name} {message}. Execution time {elapsed_duration}"
-            if details is not None:
+            s = f"{name} {message} in {elapsed_duration}"
+            if details is not None and details != "":
                 s = f"{s} • {details}" 
             Console.write(s, style=config.console_style)
             Console.write_empty_line()
@@ -187,9 +188,10 @@ class Script:
 
         if do_show_notification and config.notification_config is not None:
             show_notification(
-                f"Execution time {elapsed_duration}",
-                title=f"{cls._stack.display_name_ntf} {message}",
-                subtitle=details,
+                details,
+                # f"Execution time {elapsed_duration}",
+                title=f"{cls._stack.display_name_ntf} {message} in {elapsed_duration}",
+                # subtitle=details,
                 config=config.notification_config,
             )
 
