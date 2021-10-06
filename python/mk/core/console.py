@@ -36,15 +36,15 @@ class ConsoleStyleConfig:
         return self._rich_style
 
 class _TimedTitle(rich.console.RichCast):
-    def __init__(self, title) -> None:
-        super().__init__()
+    def __init__(self, title) -> None: # ignore: super-init-not-called
+        # super().__init__() No protocol instantiation
         self.title = title
         self.time_counter = TimeCounter()
 
     def __rich__(self):
         t = rich.text.Text()
-        ed1 = self.time_counter.elapsed_duration.format(DurationFormat.S);
-        ed2 = script_time_counter.elapsed_duration.format(DurationFormat.S);
+        ed1 = self.time_counter.elapsed_duration.format(DurationFormat.S)
+        ed2 = script_time_counter.elapsed_duration.format(DurationFormat.S)
         t.append(f"[{ed1} of {ed2}] ", style="status.spinner")
         t.append(self.title, style="status.spinner")
         return t 

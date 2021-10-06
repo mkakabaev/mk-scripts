@@ -90,6 +90,11 @@ class _XcodebuildRunner:
     def set_scheme(self, scheme):
         self.add_arg_pair("-scheme", scheme, "Scheme")
 
+    # starting XCode 13 or we will get warnings and errors during compilation
+    def set_destination(self, destination):
+        if destination is not None: 
+            self.add_arg_pair("-destination", destination, "Destination")
+
     def run(self):
         if self._root_dir is not None:
             self._root_dir.make_current()
@@ -97,7 +102,9 @@ class _XcodebuildRunner:
 
 
 class Xcode(ReprBuilderMixin):
+
     def __init__(self):
+        self.destination = None
         self._load()
 
     def _load(self):
@@ -106,8 +113,17 @@ class Xcode(ReprBuilderMixin):
     def configure_repr_builder(self, sb: ToStringBuilder):
         pass
 
+    # Starting XCode 13
+    def set_destination_ios(self):
+        self.destination = 'generic/platform=ios'
+
+    # Starting XCode 13. Not tested! check!!
+    def set_destination_macos(self):
+        self.destination = 'generic/platform=macos'
+
     def clean(self, workspace_or_project:  WorkspaceOrProject, scheme: str):  
         r = _XcodebuildRunner(title=f"{self}: Cleaning")
+        r.set_destination(self.destination)
         r.set_workspace_or_project(workspace_or_project)
         r.set_scheme(scheme)
         r.add_args("clean")
@@ -127,6 +143,7 @@ class Xcode(ReprBuilderMixin):
         Directory(archive_path.parent).ensure_exists()
 
         r = _XcodebuildRunner(title=f"{self}: Archive")
+        r.set_destination(self.destination)
         r.set_workspace_or_project(workspace_or_project)
         r.set_scheme(scheme)
         r.add_arg_pair("-archivePath", archive_path, "Result archive")

@@ -213,6 +213,7 @@ class Flutter(ReprBuilderMixin):
         if scheme is None:
             scheme = flavor if flavor is not None else "Runner"
         xcode = Xcode()
+        xcode.set_destination_ios()
         xcode.archive(workspace, scheme=scheme, archive_file=archive_file)
 
         # do ad-hoc export
@@ -240,7 +241,7 @@ class Flutter(ReprBuilderMixin):
         if reveal_result:
             File(archive_file).reveal()
 
-    def build_mac( 
+    def build_macos( 
         self,
         project: Project,
         flavor=None,
@@ -319,6 +320,7 @@ class Flutter(ReprBuilderMixin):
         if scheme is None:
             scheme = flavor if flavor is not None else "Runner"
         xcode = Xcode()
+        xcode.set_destination_macos()
         xcode.archive(workspace, scheme=scheme, archive_file=archive_file)
 
         # do app export
