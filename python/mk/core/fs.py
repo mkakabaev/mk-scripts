@@ -157,8 +157,12 @@ class Path:
         return os.path.splitext(self._path)[1]
 
     def has_extension(self, extension: str) -> bool:
-        e = os.path.splitext(self._path)[1]
-        return e == extension  # mktodo: case insensitive comparison?
+        return self.extension == extension  # mktodo: case insensitive comparison?
+
+    def ensure_has_extension(self, extension: str) -> bool:
+        if self.has_extension(extension):
+            return self
+        return Path(self.fspath + extension)
 
     def ensure_exists(self):
         if not self.exists:

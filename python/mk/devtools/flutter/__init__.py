@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # cSpell: words unsubscriptable
+# pylint: disable=too-many-statements, too-many-locals
 
 from typing import Dict, Optional
 from enum import Enum
@@ -68,7 +69,7 @@ class _FlutterRunner:
         self._runner = Runner("flutter")
         self._runner.title = f"Flutter: {title}"
         self._project = None
-        self.namer = _AppNamer();
+        self.namer = _AppNamer()
 
     def add_args(self, args):
         self._runner.add_args(args)
@@ -118,6 +119,19 @@ class _FlutterRunner:
         )
 
 
+# mktodo: add to ios/android builds
+class FlutterResult(ReprBuilderMixin):
+    def __init__(self):
+        self.project_version = None
+        self.archive_file = None
+        self.archive_dir = None
+        self.mac_app_output_dir = None
+        self.mac_app_development_output_dir = None
+
+    def configure_repr_builder(self, sb: ToStringBuilder):
+        pass
+
+
 class Flutter(ReprBuilderMixin):
     def __init__(self):
         self._version = "?"
@@ -154,7 +168,7 @@ class Flutter(ReprBuilderMixin):
         app_store_export: bool = False,
         app_store_upload: bool = False,
         reveal_result: bool = True
-    ):  # pylint: disable=too-many-locals, too-many-statements
+    ):   
         # check state and args
         assert isinstance(project, Project)
 
@@ -221,6 +235,7 @@ class Flutter(ReprBuilderMixin):
             xcode.export_ad_hoc(
                 archive_file=archive_file,
                 output_dir=ad_hoc_directory,
+                display_output=False
             )
 
         # do app-store export
@@ -228,6 +243,7 @@ class Flutter(ReprBuilderMixin):
             xcode.export_app_store( 
                 archive_file=archive_file,
                 output_dir=app_store_directory,
+                display_output=False
             )
 
         # do upload to app store
@@ -235,7 +251,8 @@ class Flutter(ReprBuilderMixin):
             xcode.export_app_store(
                 archive_file=archive_file,
                 output_dir=app_store_upload_directory,
-                is_upload=True
+                is_upload=True,
+                display_output=False
             )        
 
         if reveal_result:
@@ -253,16 +270,22 @@ class Flutter(ReprBuilderMixin):
         archive_dir=None,  # Xcode archive, optional, but required for any exporting
         scheme: str = None,  # Xcode scheme
         app_export: bool = False,
+        development_app_export: bool = False,
         # app_store_export: bool = False,
         # app_store_upload: bool = False,
         reveal_result: bool = True
-    ):  # pylint: disable=too-many-locals, too-many-statements
+    ) -> FlutterResult:
+
         # check state and args
         assert isinstance(project, Project)
 
         # clean flutter
         if clean_before:
             self.clean(project=project)
+
+        # starting collecting result data
+        result = FlutterResult()
+        result.project_version = project.version
 
         # configure and run
         r = _FlutterRunner(title="Build macOS")
@@ -273,7 +296,9 @@ class Flutter(ReprBuilderMixin):
         r.set_analyze_size(analyze_size)
         r.set_main_module(main_module)
         r.add_environment(environment)
-        r.add_hdr('App build', app_export)
+        r.add_hdr('Export App from archive', app_export)
+        r.add_hdr('Export App from archive as Development build', development_app_export)
+        
         # r.add_hdr('AppStore build', app_store_export)
         # r.add_hdr('Upload to AppStore', app_store_upload)
 
@@ -290,15 +315,28 @@ class Flutter(ReprBuilderMixin):
             do_archive = True
             archive_file = File([archive_dir, r.namer.get(postfix=".xcarchive", include_version=True)])
             archive_file.remove()
-            path_to_reveal = archive_file;
+            path_to_reveal = archive_file
+            result.archive_file = archive_file
+            result.archive_dir = archive_dir
+
+        if app_export or development_app_export:
+            if not do_archive: 
+                die("<archive_dir> is required for <app_export> option")
 
         app_directory = None
         if app_export:
-            if not do_archive: 
-                die("<archive_dir> is required for <app_export> option")
             app_directory = Directory([archive_dir, "app"])
             app_directory.remove()
-            path_to_reveal = app_directory;
+            path_to_reveal = app_directory
+            result.mac_app_output_dir = app_directory
+
+        dev_app_directory = None
+        if development_app_export:
+            dev_app_directory = Directory([archive_dir, "app_development"])
+            dev_app_directory.remove()
+            path_to_reveal = dev_app_directory
+            result.mac_app_development_output_dir = dev_app_directory
+
 
         # Not implemented yet
         # if app_store_export:
@@ -313,7 +351,7 @@ class Flutter(ReprBuilderMixin):
         # Run flutter. On completion stop unless archiving is ordered
         r.run()
         if not do_archive:
-            return
+            return result
 
         # archive the project
         workspace = project.xcode_macos_workspace
@@ -321,13 +359,20 @@ class Flutter(ReprBuilderMixin):
             scheme = flavor if flavor is not None else "Runner"
         xcode = Xcode()
         xcode.set_destination_macos()
-        xcode.archive(workspace, scheme=scheme, archive_file=archive_file)
+        xcode.archive(workspace, scheme=scheme, archive_file=archive_file)        
 
         # do app export
         if app_export:
             xcode.export_mac_application(
                 archive_file=archive_file,
                 output_dir=app_directory,
+            )
+
+        # do development export
+        if development_app_export:
+            xcode.export_mac_application_development(
+                archive_file=archive_file,
+                output_dir=dev_app_directory,
             )
 
         # Not implemented yet
@@ -349,6 +394,8 @@ class Flutter(ReprBuilderMixin):
 
         if reveal_result:
             File(path_to_reveal).reveal()
+
+        return result
 
     def build_apk(
         self,

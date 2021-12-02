@@ -95,10 +95,10 @@ class _XcodebuildRunner:
         if destination is not None: 
             self.add_arg_pair("-destination", destination, "Destination")
 
-    def run(self):
+    def run(self, display_output=False):
         if self._root_dir is not None:
             self._root_dir.make_current()
-        self._runner.run(display_output=False, notify_completion=True)
+        self._runner.run(display_output=display_output, notify_completion=True)
 
 
 class Xcode(ReprBuilderMixin):
@@ -185,7 +185,8 @@ class Xcode(ReprBuilderMixin):
         archive_file,
         output_dir,
         method,
-        title
+        title,
+        display_output=False
     ):
         archive_path = Path(archive_file)
         output_dir_path = Path(output_dir)
@@ -205,38 +206,62 @@ class Xcode(ReprBuilderMixin):
         r.add_arg_pair("-exportOptionsPlist", plist_path, "Options")
         r.add_arg_pair("-exportPath", output_dir_path, "Output")
         r.add_args("-allowProvisioningUpdates") # to enable automatic signing and getting fresh profiles
-        r.run()
-
+        r.run(display_output=display_output)
 
     def export_mac_application(
         self,
         archive_file,
         output_dir,
+        display_output=False
     ):
+        """
+            Just a plain export, no signing. XCode calls it 'Copy App'
+        """
         self._export_local(
             archive_file=archive_file,
             output_dir=output_dir, 
             method="mac-application", 
-            title="Export Mac Application"
+            title="Export Mac Application",
+            display_output=display_output
+        )
+
+    def export_mac_application_development(
+        self,
+        archive_file,
+        output_dir,
+        display_output=False
+    ):
+        """
+            Export as development build. XCode calls it 'Development. Distribute to members of your team'
+        """
+        self._export_local(
+            archive_file=archive_file,
+            output_dir=output_dir, 
+            method="development", 
+            title="Export Mac Application as development build",
+            display_output=display_output
         )
 
     def export_ad_hoc(
         self,
         archive_file,
         output_dir,
+        display_output: bool = False,
     ): 
         self._export_local(
             archive_file=archive_file,
             output_dir=output_dir, 
             method="ad-hoc", 
-            title="Export AdHoc"
+            title="Export AdHoc",
+            display_output=display_output
         )
 
     def export_app_store(
         self,
         archive_file,
         output_dir,
-        is_upload: bool = False
+        is_upload: bool = False,
+        display_output: bool = False,
     ):
         archive_path = Path(archive_file)
         output_dir_path = Path(output_dir)
@@ -263,7 +288,7 @@ class Xcode(ReprBuilderMixin):
         r.add_arg_pair("-archivePath", archive_path, "Source archive")
         r.add_arg_pair("-exportOptionsPlist", plist_path, "Options")
         r.add_args("-allowProvisioningUpdates") # to enable automatic signing and getting fresh profiles
-        r.run()
+        r.run(display_output=display_output)
 
 # cSpell: disable
 # class XCode:
