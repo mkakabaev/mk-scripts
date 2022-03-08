@@ -36,7 +36,7 @@ class _Image(ReprBuilderMixin):
         img = Image.open(self.path.fspath)
         self.size = _ImageSize(img.size[0], img.size[1])
         self.name = self.path.base_name
-        m = re.search(r"(.+)@([1234][.]?[05]?x)$", self.path.file_name)
+        m = re.search(r"(.+)@([1234][.,]?[05]?x)$", self.path.file_name)
         if m is not None:
             self.scale_postfix = m.group(2)
             self.base_name = m.group(1)
@@ -264,4 +264,3 @@ class Assets(ReprBuilderMixin):
 
         Console.write("Done (few issues found)", style=ConsoleStyle.WARNING)
         return False
-
