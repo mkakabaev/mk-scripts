@@ -159,11 +159,11 @@ class Flutter(ReprBuilderMixin):
         flavor=None,
         build_mode: BuildMode = BuildMode.RELEASE,
         main_module=None,
-        environment: Dict[str, str] = None,
+        environment: Optional[Dict[str, str]] = None,
         clean_before: bool = True,
         analyze_size: bool = False,        
-        archive_dir=None,  # Xcode archive
-        scheme: str = None,  # Xcode scheme
+        archive_dir = None,  # Xcode archive
+        scheme: Optional[str] = None,  # Xcode scheme
         ad_hoc_export: bool = False,
         app_store_export: bool = False,
         app_store_upload: bool = False,
@@ -228,7 +228,7 @@ class Flutter(ReprBuilderMixin):
             scheme = flavor if flavor is not None else "Runner"
         xcode = Xcode()
         xcode.set_destination_ios()
-        xcode.archive(workspace, scheme=scheme, archive_file=archive_file)
+        xcode.archive(workspace, scheme=scheme, archive_file=archive_file)  # type: ignore
 
         # do ad-hoc export
         if do_export_ad_hoc:
@@ -264,11 +264,11 @@ class Flutter(ReprBuilderMixin):
         flavor=None,
         build_mode: BuildMode = BuildMode.RELEASE,
         main_module=None,
-        environment: Dict[str, str] = None,
+        environment: Optional[Dict[str, str]] = None,
         clean_before: bool = True,
         analyze_size: bool = False,        
-        archive_dir=None,  # Xcode archive, optional, but required for any exporting
-        scheme: str = None,  # Xcode scheme
+        archive_dir = None,  # Xcode archive, optional, but required for any exporting
+        scheme: Optional[str] = None,  # Xcode scheme
         app_export: bool = False,
         development_app_export: bool = False,
         # app_store_export: bool = False,
