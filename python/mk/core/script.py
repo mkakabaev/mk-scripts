@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cSpell: words atexit getpid runpy
+# cSpell: words atexit getpid runpy excepthook SIGTERM
 
 import signal
 import sys
@@ -287,6 +287,7 @@ class Script:
 
         except Exception as e:
             cls.die(f"Unable to import module [{path}]: {e}")
+            return None # to make the analyzer happy
 
 
 Script._init()  # pylint: disable=protected-access

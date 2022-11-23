@@ -16,7 +16,7 @@ class IconAsset:
 
 
 class Assets:
-
+    '''The library bundled assets'''
     _directory = None
 
     @classmethod

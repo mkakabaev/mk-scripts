@@ -75,7 +75,7 @@ class _ImageSubFolder(ReprBuilderMixin):
             name = fs_entry.path.base_name
             p_name = fs_entry.path.relative()
 
-            # Nested directoriesare no allowed
+            # Nested directories are no allowed
             if isinstance(fs_entry, Directory):
                 issues.add(f"{self}: Unexpected directory {p_name} found")
                 continue

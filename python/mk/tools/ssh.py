@@ -29,12 +29,16 @@ class SSH(ReprBuilderMixin):
         components.append(Path(path).fspath)
         return ":".join(components)
 
-    def upload(self, local_path, remote_path, title=None):
+    def upload(self, local_path, remote_path, title=None, display_output: bool=True):
         title = Safe.first_available([title, f"Uploading {local_path}"])
         local_path = Path(local_path)
-        remote_path = self._make_remote_path(remote_path)        
-        r = Runner("scp", [ local_path, remote_path], title=f"{self}: {title}")
-        r.run(notify_completion=False, display_output=True)
+        remote_path = self._make_remote_path(remote_path) 
+        args = []
+        if local_path.exists_as_directory: # recursive copy
+            args += ['-r']        
+        args += [ local_path, remote_path]
+        r = Runner("scp", args, title=f"{self}: {title}")
+        r.run(notify_completion=False, display_output=display_output)
 
     def download(self, remote_path, local_path, title=None) :
         title = Safe.first_available([title, f"Downloading {remote_path}"])
@@ -43,7 +47,7 @@ class SSH(ReprBuilderMixin):
         r = Runner("scp", [ remote_path, local_path], title=f"{self}: {title}")
         r.run(notify_completion=False, display_output=True)
 
-    def run_script(self, script: str, title: str = None):
+    def run_script(self, script: str, title: str = None, display_output: bool=True):
         title = Safe.first_available([title, "Executing script"])
         r = Runner( "ssh", [ self._make_connection_string(), 'bash', "-s"], title=f"{self}: {title}")
-        r.run(notify_completion=True, input_data=script, display_output=False)
+        r.run(notify_completion=True, input_data=script, display_output=display_output)

@@ -168,6 +168,10 @@ class Path:
         if not self.exists:
             int_die(f'{self}: does not exist')
 
+    def ensure_exists_as_directory(self):
+        if not self.exists_as_directory:
+            int_die(f'{self}: does not exist (or not a directory)')
+
 
 class FSEntry(ReprBuilderMixin, metaclass=abc.ABCMeta):
     

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cSpell: words iphoneos
+# cSpell: words iphoneos pubspec
 
 import re
 from ...core import (
