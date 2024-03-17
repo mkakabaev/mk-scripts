@@ -201,6 +201,11 @@ class Script:
     def path(cls) -> Path:
         return cls._stack.current.path
 
+    @classmethod    
+    def relative_path(cls, subpath = None) -> Path:
+        '''Relative path to the current script directory. If subpath is provided, it is appended to the current script directory path.'''
+        return Path(cls._stack.current.path.parent) + subpath
+
     @classmethod
     def _on_default_exit(cls):
         cls._on_exit2(cls.default_exit_action_config, "finished")

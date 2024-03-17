@@ -18,16 +18,18 @@ class Safe:
 
     @staticmethod
     def is_sequence(value):
-        return isinstance(value, collections.abc.Sequence) and not isinstance(value, str)
+        return isinstance(value, collections.abc.Sequence) and not isinstance(
+            value, str
+        )
 
     @staticmethod
     def first_available(values, default=None):
         """
-            Get first available (not None) value from the list or default one
+        Get first available (not None) value from the list or default one
         """
         if not Safe.is_sequence(values):
             values = [values]
-        
+
         for value in values:
             v = _resolve_callable(value)
             if v is not None:
@@ -43,14 +45,15 @@ class Safe:
 
     @staticmethod
     def to_list(values, mapper: Callable[[Any], Any] | None = None):
-
         if values is None:
             return []
 
         if mapper is None:
-            mapper = lambda v: v 
+            mapper = lambda v: v
 
         if Safe.is_sequence(values):
-            return list(map(mapper, values))
-
+            result = []
+            for r in values:
+                result += Safe.to_list(r, mapper)
+            return result
         return [mapper(values)]

@@ -18,7 +18,6 @@ from ._internal import int_die
 
 
 class Path:
-
     def __init__(self, path):
         # p = self._path_from_object(path);
         # p = os.path.expanduser(p);

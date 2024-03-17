@@ -9,11 +9,11 @@ from ..core import (
     Safe,
 )
 
-
 class SSH(ReprBuilderMixin):
-    def __init__(self, user: str, host: str):
+    def __init__(self, user: str, host: str, options: list[str] = []):
         self.user = user
         self.host = host
+        self.options = options
         self._load()
 
     def _load(self):
@@ -38,29 +38,45 @@ class SSH(ReprBuilderMixin):
         components.append(Path(path).fspath)
         return ":".join(components)
 
-    def upload(self, local_path, remote_path, title=None, display_output: bool = True):
+    def upload(self, local_path, remote_path, title: str | None = None, display_output: bool = True):
         title = Safe.first_available([title, f"Uploading {local_path}"])
         local_path = Path(local_path)
         remote_path = self._make_remote_path(remote_path)
         args = []
         if local_path.exists_as_directory:  # recursive copy
             args += ["-r"]
+        args += self.options
         args += [local_path, remote_path]
         r = Runner("scp", args, title=f"{self}: {title}")
         r.run(notify_completion=False, display_output=display_output)
 
-    def download(self, remote_path, local_path, title=None):
+    def download(self, remote_path, local_path, title: str | None = None, display_output: bool = True):
         title = Safe.first_available([title, f"Downloading {remote_path}"])
         local_path = Path(local_path)
         remote_path = self._make_remote_path(remote_path)
-        r = Runner("scp", [remote_path, local_path], title=f"{self}: {title}")
-        r.run(notify_completion=False, display_output=True)
+        r = Runner("scp", [self.options, remote_path, local_path], title=f"{self}: {title}")
+        r.run(notify_completion=False, display_output=display_output)
 
     def run_script(self, script: str, title: str | None = None, display_output: bool = True):
+        """
+            Run a multi-line script
+        """
         title = Safe.first_available([title, "Executing script"])
         r = Runner(
             "ssh",
-            [self._make_connection_string(), "bash", "-s"],
+            [self._make_connection_string(), self.options, "bash", "-s"],
             title=f"{self}: {title}",
         )
         r.run(notify_completion=True, input_data=script, display_output=display_output)
+
+    def run_command(self, command: str | list[str], title: str | None = None, display_output: bool = True):
+        """
+            Run a single command
+        """
+        title = Safe.first_available([title, "Executing command"])
+        r = Runner(
+            "ssh",
+            [self._make_connection_string(), self.options, " ".join(Safe.to_list(command))],
+            title=f"{self}: {title}",
+        )
+        r.run(notify_completion=True, display_output=display_output)

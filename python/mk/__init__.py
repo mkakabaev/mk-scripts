@@ -16,5 +16,6 @@ __all__ = [
     "DateTime", "DateTimeFormat", "TimeCounter", "Duration", "DurationFormat",
     "NotificationConfig", "show_notification",
     "Assets",
-    "Runner"
+    "Runner",
+    "Safe"
 ]
