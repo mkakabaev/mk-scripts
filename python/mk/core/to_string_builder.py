@@ -12,14 +12,17 @@ class ToStringBuilderValueFmt(Enum):
 
 
 class ToStringBuilder:
-
     def __init__(self, typename):
         self._entries = []
         self.typename = typename
 
-    def add(self, name: str, value, format_type=ToStringBuilderValueFmt.ANY, quoted=False):
+    def add(
+        self, name: str, value, format_type=ToStringBuilderValueFmt.ANY, quoted=False
+    ):
         if name is not None and value is not None:
-            self._entries.append(f'{name}={self._format_value(value, format_type, quoted = quoted)}')
+            self._entries.append(
+                f"{name}={self._format_value(value, format_type, quoted = quoted)}"
+            )
         return self
 
     def add_value(self, value, format_type=ToStringBuilderValueFmt.ANY, quoted=False):
@@ -57,12 +60,16 @@ class ToStringBuilder:
     #     return this.addValue(value, ToStringBuilderValueFormat.timestamp)
     # }
 
-    def _format_value(self, value, format_type: ToStringBuilderValueFmt, quoted: bool) -> str:
+    def _format_value(
+        self, value, format_type: ToStringBuilderValueFmt, quoted: bool
+    ) -> str:
 
         is_string = isinstance(value, str)
 
         if isinstance(value, collections.abc.Sequence) and not is_string:
-            m = map(lambda v1: self._format_value(v1, format_type, quoted=quoted), value)
+            m = map(
+                lambda v1: self._format_value(v1, format_type, quoted=quoted), value
+            )
             return f'[{", ".join(list(m))}]'
 
         if format_type == ToStringBuilderValueFmt.TIMESTAMP:
@@ -84,7 +91,7 @@ class ToStringBuilder:
             raise Exception("Not implemented yet")
 
         if format_type == ToStringBuilderValueFmt.RAW:
-            return f'{value}'
+            return f"{value}"
 
         if format_type == ToStringBuilderValueFmt.ANY:
             pass
@@ -98,9 +105,9 @@ class ToStringBuilder:
         if is_string:
             if quoted:
                 return f'"{value}"'
-            return f'{value}'
+            return f"{value}"
 
-        return f'{value}'
+        return f"{value}"
 
     def __str__(self):
         t_name = self.typename

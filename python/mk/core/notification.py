@@ -17,7 +17,7 @@ class NotificationSound(Enum):
 class NotificationConfig:
     def __init__(
         self, 
-        sound: NotificationSound = None,
+        sound: NotificationSound | None = None,
         icon=None   # ='/Applications/xxx.app/Contents/Resources/yyy.icns',
     ):
         self.sound = sound
@@ -27,8 +27,8 @@ class NotificationConfig:
 def show_notification(
     message: str,
     config: NotificationConfig,
-    title: str = None,
-    subtitle: str = None,
+    title: str | None = None,
+    subtitle: str | None = None,
 ):
     sound = Safe.conditional(config, lambda: config.sound)
     icon = Safe.conditional(config, lambda: config.icon)

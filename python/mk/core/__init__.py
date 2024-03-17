@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 # cSpell: words
 
@@ -8,7 +7,7 @@ from .misc import *
 from .to_string_builder import *
 from .runner import *
 from .script import *
-from .time import *
+from .time_utils import *
 from .notification import *
 from ._internal import *
 from .assets import *

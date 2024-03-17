@@ -7,13 +7,15 @@ import collections.abc
 import functools
 import shutil
 import pathlib
+from io import TextIOBase
 from enum import Enum
 from typing import Callable
 
-from .runner import Runner 
+from .runner import Runner
 from .to_string_builder import ReprBuilderMixin, ToStringBuilder
 from .console import Console
 from ._internal import int_die
+
 
 class Path:
 
@@ -23,25 +25,25 @@ class Path:
         # p = os.path.normpath(p);
         p = os.path.normpath(os.path.expanduser(self._path_from_object(path)))
         if not p:
-            raise Exception('Path cannot be empty')
+            raise Exception("Path cannot be empty")
         self._path = str(p)
 
     # accepting almost everything path-like
     @staticmethod
     def _path_from_object(p):
-        
+
         if p is None:
             return ""
 
         if isinstance(p, str):
             return p
-        
+
         if isinstance(p, os.PathLike):  # Path is also os.PathLike
             return os.fspath(p)
-        
+
         if isinstance(p, collections.abc.Sequence) and p:
             lst = list(map(Path._path_from_object, p))
-            return functools.reduce(Path._join, lst) 
+            return functools.reduce(Path._join, lst)
 
         raise Exception(f"Cannot convert {p} to a path string")
 
@@ -56,20 +58,22 @@ class Path:
         if os.path.isabs(path2):
             path2 = os.path.splitdrive(path2)[1]
             if path2.startswith(os.sep):
-                path2 = path2[len(os.sep):]
+                path2 = path2[len(os.sep) :]
         return os.path.join(path1, path2)
 
     # def __lt__(self, other): # + @functools.total_ordering gives full comparison
-    #     return self._path < other._path 
+    #     return self._path < other._path
 
-    def __eq__(self, other): 
-        return self._path == other._path 
+    def __eq__(self, other):
+        return self._path == other._path
 
-    def __ne__(self, other): 
-        return self._path != other._path 
+    def __ne__(self, other):
+        return self._path != other._path
 
     def __repr__(self):
-        return f"[{self._path}]"  # using [ ] enables cmd+click in VS Code while < > not. 
+        return (
+            f"[{self._path}]"  # using [ ] enables cmd+click in VS Code while < > not.
+        )
 
     def __add__(self, other):
         return Path([self._path, other])
@@ -79,18 +83,18 @@ class Path:
         return self
 
     def __copy__(self):
-        return Path(self._path)   
+        return Path(self._path)
 
     def __deepcopy__(self, memo):
-        return Path(self._path)        
+        return Path(self._path)
 
     # os.PathLike implementation
-    def __fspath__(self):
+    def __fspath__(self) -> str:
         return self._path
 
     @property
     def fspath(self) -> str:
-        return self._path 
+        return self._path
 
     @property
     def exists(self) -> bool:
@@ -110,7 +114,7 @@ class Path:
 
     @property
     def is_absolute(self):
-        return pathlib.Path(self.fspath).is_absolute() 
+        return pathlib.Path(self.fspath).is_absolute()
 
     @property
     def is_root(self) -> bool:
@@ -136,7 +140,7 @@ class Path:
         return str(os.path.basename(self._path))
 
     def relative(self, level: int = 0):
-        '''relative path starting base_name and up to [level] levels '''
+        """relative path starting base_name and up to [level] levels"""
         components = [self.base_name]
         if level > 0:
             parent = self.parent
@@ -159,28 +163,30 @@ class Path:
     def has_extension(self, extension: str) -> bool:
         return self.extension == extension  # mktodo: case insensitive comparison?
 
-    def ensure_has_extension(self, extension: str) -> bool:
-        if self.has_extension(extension):
-            return self
-        return Path(self.fspath + extension)
+    def set_extension(self, extension: str):
+        if not extension.startswith("."):
+            extension = "." + extension
+        p, e = os.path.splitext(self._path)
+        if e != extension:
+            self._path = p + extension
 
     def ensure_exists(self):
         if not self.exists:
-            int_die(f'{self}: does not exist')
+            int_die(f"{self}: does not exist")
 
     def ensure_exists_as_directory(self):
         if not self.exists_as_directory:
-            int_die(f'{self}: does not exist (or not a directory)')
+            int_die(f"{self}: does not exist (or not a directory)")
 
 
 class FSEntry(ReprBuilderMixin, metaclass=abc.ABCMeta):
-    
-    def __init__(self, path):        
+
+    def __init__(self, path):
         self._path = Path(path)
 
-    # ReprBuilderMixin overrides    
+    # ReprBuilderMixin overrides
     def configure_repr_builder(self, sb: ToStringBuilder):
-        sb.add('path', self._path.fspath)
+        sb.add("path", self._path.fspath)
 
     # os.PathLike implementation
     def __fspath__(self):
@@ -188,12 +194,12 @@ class FSEntry(ReprBuilderMixin, metaclass=abc.ABCMeta):
 
     @property
     def path(self) -> Path:
-        return self._path             
+        return self._path
 
     def reveal(self):
         runner = Runner("open", ["-R", self])
         runner.title = f"Reveal {self}..."
-        runner.run(display_output = False)
+        runner.run(display_output=False)
 
     @property
     @abc.abstractmethod
@@ -201,7 +207,7 @@ class FSEntry(ReprBuilderMixin, metaclass=abc.ABCMeta):
         pass
 
     def remove(self, missing_ok=True):
-        
+
         p = self.path
         if not p.exists:
             if missing_ok:
@@ -232,42 +238,43 @@ class FileMode(Enum):
 
 
 class File(FSEntry):
-
     def __init__(self, path, must_exist=False):
         self._mode = None
-        self._file = None
+        self._file: TextIOBase | None = None
         super().__init__(path=path)
         if must_exist:
             self.ensure_exists()
 
-    # ReprBuilderMixin overrides    
-    def configure_repr_builder(self, sb: ToStringBuilder):    
-        super().configure_repr_builder(sb)    
-        sb.add('mode', self._mode)
+    # ReprBuilderMixin overrides
+    def configure_repr_builder(self, sb: ToStringBuilder):
+        super().configure_repr_builder(sb)
+        sb.add("mode", self._mode)
 
     def read_all(self):
-        f = open(self.path.fspath, "r") or int_die(f"{self}: Unable to open file for reading")
+        f = open(self.path.fspath, "r") or int_die(
+            f"{self}: Unable to open file for reading"
+        )
         result = f.read()
         f.close()
         return result
 
     def open_for_writing(self):
         try:
-            if self._mode != FileMode.WRITE: 
-                self.close()            
+            if self._mode != FileMode.WRITE:
+                self.close()
                 self._file = open(self.path.fspath, "w")
                 self._mode = FileMode.WRITE
-        except Exception as e:    
-            int_die(f"{self}: Unable to open file for writing: {e}")        
+        except Exception as e:
+            int_die(f"{self}: Unable to open file for writing: {e}")
 
     def open_for_appending(self):
         try:
-            if self._mode != FileMode.APPEND: 
-                self.close()            
+            if self._mode != FileMode.APPEND:
+                self.close()
                 self._file = open(self.path.fspath, "a")
                 self._mode = FileMode.APPEND
-        except Exception as e:    
-            int_die(f"{self}: Unable to open file for appending: {e}")        
+        except Exception as e:
+            int_die(f"{self}: Unable to open file for appending: {e}")
 
     def close(self):
         if self._file is not None:
@@ -276,15 +283,20 @@ class File(FSEntry):
             self._mode = None
 
     def write(self, s):
-        assert self._mode == FileMode.WRITE or self._mode == FileMode.APPEND, f"{self}: unable to write to, the file is not opened for writing"
-        self._file.write(s)
+        f = self._file
+        if (
+            self._mode == FileMode.WRITE or self._mode == FileMode.APPEND
+        ) and f is not None:
+            f.write(s)
+        else:
+            int_die(f"{self}: unable to write to, the file is not opened for writing")
 
     def ensure_exists(self):
         if self.path.exists:
             if self.path.exists_as_file:
                 return
-            int_die(f'{self}: the entry exists in file system but it is not a file')
-        int_die(f'{self}: does not exist')
+            int_die(f"{self}: the entry exists in file system but it is not a file")
+        int_die(f"{self}: does not exist")
 
     def copy_to(self, destination: os.PathLike, log: bool = False):
         try:
@@ -309,7 +321,7 @@ class File(FSEntry):
             patched_line = f(idx, line)
             if patched_line is not None:
                 outlines.append(patched_line)
-        dest = self # File(self.path.fspath + ".b")
+        dest = self  # File(self.path.fspath + ".b")
         dest.open_for_writing()
         dest.write("\n".join(outlines))
         dest.close()
@@ -327,9 +339,9 @@ class Directory(FSEntry):
         if must_exist:
             self.ensure_exists(create_if_needed=create_if_needed)
 
-    # ReprBuilderMixin overrides    
+    # ReprBuilderMixin overrides
     # def configure_repr_builder(self, sb: ToStringBuilder):
-    #     super().configure_repr_builder(sb) 
+    #     super().configure_repr_builder(sb)
 
     def make_current(self):
         try:
@@ -337,18 +349,20 @@ class Directory(FSEntry):
         except Exception as e:
             int_die(f"{self}: Unable to make myself the current directory: {e}")
 
-    def ensure_exists(self, create_if_needed: bool = True):        
+    def ensure_exists(self, create_if_needed: bool = True):
         if self.path.exists:
             if self.path.exists_as_directory:
                 return
-            int_die(f'{self}: the entry exists in file system but it is not a directory')
+            int_die(
+                f"{self}: the entry exists in file system but it is not a directory"
+            )
         if create_if_needed:
             try:
-                os.makedirs(self.path.fspath)            
-                return           
+                os.makedirs(self.path.fspath)
+                return
             except Exception as e:
-                int_die(f'{self}: unable to create directory: {e}')
-        int_die(f'{self}: does not exist')
+                int_die(f"{self}: unable to create directory: {e}")
+        int_die(f"{self}: does not exist")
 
     @property
     def is_system(self):
@@ -357,7 +371,7 @@ class Directory(FSEntry):
     def list(self, skip_system_objects=True, sort=False):
         try:
             result = []
-            for (_, dirnames, filenames) in os.walk(self.path):
+            for _, dirnames, filenames in os.walk(self.path):
                 if sort:
                     dirnames = sorted(dirnames)
                 for d in dirnames:
@@ -368,6 +382,6 @@ class Directory(FSEntry):
                     file = File([self.path, f])
                     if not skip_system_objects or not file.is_system:
                         result.append(file)
-                return result # no recurse yet
+            return result  # no recurse yet
         except Exception as e:
-            int_die(f'{self}: unable to list the directory: {e}')
+            int_die(f"{self}: unable to list the directory: {e}")

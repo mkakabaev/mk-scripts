@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cSpell: words popen bgcolor
+# cSpell: words popen bgcolor renderable
 
 from enum import Enum
 import rich.console
@@ -7,7 +7,8 @@ import rich.style
 import rich.text
 import rich.color
 from .misc import Safe
-from .time import Duration, DurationFormat, TimeCounter, script_time_counter
+from .time_utils import Duration, DurationFormat, TimeCounter, script_time_counter
+
 
 class ConsoleStyle(Enum):
     SECTION_HEADER = 1
@@ -18,25 +19,22 @@ class ConsoleStyle(Enum):
 
 
 class ConsoleStyleConfig:
-
-    def __init__(
-        self, 
-        color = None, 
-        background_color = None, 
-        bold: bool = False
-    ):        
+    def __init__(self, color=None, background_color=None, bold: bool = False):
         self._rich_style = None
         self.color = color
         self.background_color = background_color
         self.bold = bold
 
-    def get_rich_style(self): 
+    def get_rich_style(self):
         if self._rich_style is None:
-            self._rich_style = rich.style.Style(color=self.color, bold=self.bold, bgcolor=self.background_color)
+            self._rich_style = rich.style.Style(
+                color=self.color, bold=self.bold, bgcolor=self.background_color
+            )
         return self._rich_style
 
+
 class _TimedTitle(rich.console.RichCast):
-    def __init__(self, title) -> None: # ignore: super-init-not-called
+    def __init__(self, title) -> None:  # ignore: super-init-not-called
         # super().__init__() No protocol instantiation
         self.title = title
         self.time_counter = TimeCounter()
@@ -47,43 +45,42 @@ class _TimedTitle(rich.console.RichCast):
         ed2 = script_time_counter.elapsed_duration.format(DurationFormat.S)
         t.append(f"[{ed1} of {ed2}] ", style="status.spinner")
         t.append(self.title, style="status.spinner")
-        return t 
+        return t
+
 
 class Console:
-
     _prev_line_empty = False
 
     _styles = {
-        ConsoleStyle.SECTION_HEADER: ConsoleStyleConfig(color=rich.color.Color.from_ansi(153), bold=True), # 
+        ConsoleStyle.SECTION_HEADER: ConsoleStyleConfig(
+            color=rich.color.Color.from_ansi(153), bold=True
+        ),  #
         ConsoleStyle.SUCCESS: ConsoleStyleConfig(color="bright_green"),
-        ConsoleStyle.WARNING: ConsoleStyleConfig(color=rich.color.Color.from_ansi(226)), # color="bright_yellow"),
+        ConsoleStyle.WARNING: ConsoleStyleConfig(
+            color=rich.color.Color.from_ansi(226)
+        ),  # color="bright_yellow"),
         # ConsoleStyle.FATAL_ERROR: ConsoleStyleConfig(color="bright_white", background_color="bright_red",),
         # ConsoleStyle.FATAL_ERROR: ConsoleStyleConfig(color="bright_red"),
-        ConsoleStyle.FATAL_ERROR: ConsoleStyleConfig(background_color=rich.color.Color.from_ansi(160), color="bright_white"),
-        # ConsoleStyle.RUN_STATUS: ConsoleStyleConfig(background_color="grey3", color="bright_white"),        
+        ConsoleStyle.FATAL_ERROR: ConsoleStyleConfig(
+            background_color=rich.color.Color.from_ansi(160), color="bright_white"
+        ),
+        # ConsoleStyle.RUN_STATUS: ConsoleStyleConfig(background_color="grey3", color="bright_white"),
     }
 
     _status = None
-
-    _rc = None
-    _rcl = None
+    _rc: rich.console.Console
+    _rcl: rich.console.Console
 
     @classmethod
     def _init(cls):
 
         # underlying console processor. https://rich.readthedocs.io/en/latest/index.html
         cls._rcl = rich.console.Console(  # pylint: disable=invalid-name
-            highlight=False, 
-            markup=False,
-            log_path=False,
-            record=True,
-            width=120
+            highlight=False, markup=False, log_path=False, record=True, width=120
         )
         cls._rc = rich.console.Console(  # pylint: disable=invalid-name
-            highlight=False, 
-            markup=False,
-            log_path=False
-        )                
+            highlight=False, markup=False, log_path=False
+        )
 
     @classmethod
     def dump_styles(cls):
@@ -91,7 +88,7 @@ class Console:
             cls.write(f"{style}", style=style)
 
     @classmethod
-    def _resolve_style(cls, style):  
+    def _resolve_style(cls, style) -> ConsoleStyleConfig | None:
         if style is not None:
             try:
                 return cls._styles[style]
@@ -104,40 +101,35 @@ class Console:
         return None
 
     @classmethod
-    def write_raw(
-        cls,
-        rich_renderable
-    ):
-        cls._rc.print(rich_renderable)          
+    def write_raw(cls, rich_renderable):
+        cls._rc.print(rich_renderable)
         cls._log(rich_renderable)
         cls._prev_line_empty = False
 
     @classmethod
     def _log(cls, o):
         with cls._rcl.capture() as _:
-            cls._rcl.log(o)            
+            cls._rcl.log(o)
             log_text = cls._rcl.export_text()
             cls._add_to_history(log_text)
 
     @classmethod
     def write(
-        cls, 
-        text, 
-        style: ConsoleStyle = None, 
+        cls,
+        text,
+        style: ConsoleStyle | None = None,
         to_display: bool = True,
-    ):              
+    ):
         cls._prev_line_empty = text is None or len(text) == 0 or text.endswith("\n")
-    
+
         if to_display:
             style_config = cls._resolve_style(style)
-            cls._rc.print(
-                text, 
-                style=Safe.conditional(style_config, lambda: style_config.get_rich_style())  # pylint: disable=unnecessary-lambda
-            )
+            rc_style = style_config.get_rich_style() if style_config != None else None
+            cls._rc.print(text, style=rc_style)
 
         # we log always
         cls._log(text)
-    
+
     @classmethod
     def stop_status(cls):
         if cls._status is not None:
@@ -171,7 +163,7 @@ class Console:
     _flush_capacity = 1
 
     @classmethod
-    def set_log_file(cls, log_file_path, flush_capacity: int = None):
+    def set_log_file(cls, log_file_path, flush_capacity: int | None = None):
         assert log_file_path is not None
         if cls._history_file is not None:
             if cls._history_file_path == log_file_path:

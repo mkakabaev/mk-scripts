@@ -32,12 +32,12 @@
             "--disable=C0111", // missing-docstring            
             "--disable=C0301", // line-too-long
             "--disable=C0303", // trailing-whitespace
-            "--disable=C0330", // bad-continuation: to work properly with the 'black' formatter            
+            // "--disable=C0330", // bad-continuation: to work properly with the 'black' formatter            
             "--disable=R0903", // too-few-public-methods
             "--disable=R0912", // too-many-branches
             "--disable=R0913", // too-many-arguments
             "--disable=R0914", // too-many-locals
-            "--disable=W6014", // unused-wildcard-import
+            // "--disable=W6014", // unused-wildcard-import
             "--disable=W0703", // broad-except
             "--good-names=e,f,a,b,t,d,i,j,k,l,m,v,t,s,h,o,p,r,sb,w,x,y",            
         ],

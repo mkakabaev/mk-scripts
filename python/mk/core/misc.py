@@ -12,7 +12,6 @@ def _resolve_callable(value):
 
 
 class Safe:
-
     @staticmethod
     def resolve_callable(value):
         return _resolve_callable(value)
@@ -43,7 +42,7 @@ class Safe:
         return _resolve_callable(default)
 
     @staticmethod
-    def to_list(values, mapper: Callable[[Any], Any] = None):
+    def to_list(values, mapper: Callable[[Any], Any] | None = None):
 
         if values is None:
             return []

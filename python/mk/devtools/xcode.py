@@ -102,7 +102,6 @@ class _XcodebuildRunner:
 
 
 class Xcode(ReprBuilderMixin):
-
     def __init__(self):
         self.destination = None
         self._load()
@@ -153,10 +152,10 @@ class Xcode(ReprBuilderMixin):
     def make_export_options_file(  # pylint: disable=no-self-use
         self,
         output_path,
-        team_id: str = None,
-        method: str = None,
+        team_id: str | None = None,
+        method: str | None = None,
         signing_style: str = "automatic",
-        destination: str = None
+        destination: str | None = None
     ):
         content = []
 

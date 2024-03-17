@@ -8,12 +8,13 @@ import os
 import time
 import re
 import importlib.util
+from typing import NoReturn
 from runpy import run_path
 from rich.rule import Rule
 from .console import Console, ConsoleStyle
 from .notification import NotificationConfig, NotificationSound, show_notification
 from .fs import Path, Directory
-from .time import TimeCounter
+from .time_utils import TimeCounter
 from .assets import Assets
 
 # core folder: os.path.realpath(os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0]))
@@ -40,8 +41,8 @@ class _SignalHandler:
 class ExitActionConfig:
     def __init__(
         self, 
-        notification_config: NotificationConfig = None, 
-        console_style: ConsoleStyle = None
+        notification_config: NotificationConfig | None = None, 
+        console_style: ConsoleStyle | None = None
     ):
         self.notification_config = notification_config
         self.console_style = console_style
@@ -108,7 +109,7 @@ class Script:
     #     assert handler is not None
     #     cls._exit_handlers.append(handler)
 
-    _stack = None
+    _stack: _Stack
 
     _original_except_hook = None
 
@@ -156,7 +157,7 @@ class Script:
         cls,
         config: ExitActionConfig,
         message: str,
-        details: str = None,
+        details: str | None = None,
         do_show_notification: bool = True
     ):
         # must be called only once
@@ -188,7 +189,7 @@ class Script:
 
         if do_show_notification and config.notification_config is not None:
             show_notification(
-                details,
+                details if details is not None else "",
                 # f"Execution time {elapsed_duration}",
                 title=f"{cls._stack.display_name_ntf} {message} in {elapsed_duration}",
                 # subtitle=details,
@@ -221,19 +222,19 @@ class Script:
             cls._original_except_hook(exc_type, value, traceback)  #pylint: disable=not-callable
 
     @classmethod
-    def die(cls, message):
+    def die(cls, message: str) -> NoReturn:
         cls._on_exit2(cls.term_exit_action_config, "died", message)
         cls.exit(1)
 
     @classmethod
-    def success(cls, message: str = None):
+    def success(cls, message: str | None = None):
         full_effects = not cls._stack.is_nested
         cls._on_exit2(cls.success_exit_action_config, "completed", message, do_show_notification=full_effects)
         if full_effects:
             cls.exit(0)
 
     @classmethod
-    def exit(cls, code: int):
+    def exit(cls, code: int) -> NoReturn:
         sys.exit(code)
 
     @classmethod
@@ -280,8 +281,12 @@ class Script:
                     raise Exception(f"{p} does not exist")
 
             spec = importlib.util.spec_from_file_location(name, p.fspath)
+            if spec is None:
+                raise Exception(f"Unable to create a spec for [{path}]")
             module = importlib.util.module_from_spec(spec)
             sys.modules[spec.name] = module 
+            if spec.loader is None:
+                raise Exception(f"Unable to create a loader for [{path}]")
             spec.loader.exec_module(module) 
             return module
 
@@ -294,9 +299,9 @@ Script._init()  # pylint: disable=protected-access
 # Script.register_exit_handler(lambda reason: Console.flush())
 
 
-def die(message: str = None):
+def die(message: str):
     Script.die(message)
 
 
-def success(message: str = None):
+def success(message: str | None = None):
     Script.success(message=message)

@@ -26,7 +26,8 @@ class Project(ReprBuilderMixin):
             m = re.search(regexp, pubspec, re.MULTILINE)
             if m is None:
                 die(f"{self}: unable to fetch <{tag}> from 'pubspec.yaml'")
-            return m.group(group)
+            else:
+                return m.group(group)
 
         self._name = fetch("name", r"^name:\s+(\S+)", 1)
         self._description = fetch("description", r"^description:\s+(\S.*)\s*$", 1)

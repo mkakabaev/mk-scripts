@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cSpell: words unsubscriptable
+# cSpell: words unsubscriptable appbundle
 # pylint: disable=too-many-statements, too-many-locals
 
 from typing import Dict, Optional
@@ -41,7 +41,7 @@ class _AppNamer:
         self.prefix = "app"
         self.flavor = None
         self.build_mode = None
-        self.project_version = ""
+        self.project_version: Optional[str]
 
     def get(self, postfix = "", include_version = False):
         components = []
@@ -122,11 +122,11 @@ class _FlutterRunner:
 # mktodo: add to ios/android builds
 class FlutterResult(ReprBuilderMixin):
     def __init__(self):
-        self.project_version = None
-        self.archive_file = None
+        self.project_version: str | None = None
+        self.archive_file: File | None = None
         self.archive_dir = None
-        self.mac_app_output_dir = None
-        self.mac_app_development_output_dir = None
+        self.mac_app_output_dir: Directory | None = None
+        self.mac_app_development_output_dir: Directory | None = None
 
     def configure_repr_builder(self, sb: ToStringBuilder):
         pass
@@ -404,7 +404,7 @@ class Flutter(ReprBuilderMixin):
         flavor=None,
         build_mode: BuildMode = BuildMode.RELEASE,
         main_module=None,
-        environment: Dict[str, str] = None,
+        environment: Optional[Dict[str, str]] = None,
         reveal_result: bool = True,
         clean_before: bool = True,
         # analyze_size: bool = False
@@ -457,7 +457,7 @@ class Flutter(ReprBuilderMixin):
         flavor=None,
         build_mode: BuildMode = BuildMode.RELEASE,
         main_module=None,
-        environment: Dict[str, str] = None,
+        environment: Optional[Dict[str, str]] = None,
         reveal_result: bool = True,
         clean_before: bool = True,
         # analyze_size: bool = False
@@ -512,7 +512,7 @@ class Flutter(ReprBuilderMixin):
         flavor=None,
         build_mode: BuildMode = BuildMode.RELEASE,
         main_module=None,
-        environment: Dict[str, str] = None,
+        environment: Optional[Dict[str, str]] = None,
         clean_before: bool = True,
     ):
 

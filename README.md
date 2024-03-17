@@ -23,7 +23,7 @@ export PYTHONPATH="/Users/murad/dir1/../dirN/mk-scripts/python"
 **Sample**
 
 ```zsh
-python3.8 -m pip install rich pync pillow
+python3.11 -m pip install rich pync pillow python-dateutil
 
 ```
 
