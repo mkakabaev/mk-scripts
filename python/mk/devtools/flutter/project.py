@@ -31,7 +31,7 @@ class Project(ReprBuilderMixin):
 
         self._name = fetch("name", r"^name:\s+(\S+)", 1)
         self._description = fetch("description", r"^description:\s+(\S.*)\s*$", 1)
-        self._version = fetch("version", r"^version:\s+(\S+)", 1)
+        self._version = fetch("version", r"^version:\s*(\S+)", 1)
 
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.typename = "flutter.Project"
@@ -45,7 +45,29 @@ class Project(ReprBuilderMixin):
         return self._name
 
     @property
+    def version_xyz(self):
+        """Returns the version of the project in X.Y.Z"""
+        version = self._version
+        if version is None:
+            version = ""
+        result = version.split("+")[0]
+        if result is None or result.strip() == "":
+            raise Exception("Version is not set")
+        return result.strip()
+
+    @property
+    def build_number(self):
+        version = self._version
+        if version is None:
+            version = ""
+        result = version.split("+", 1)[1]
+        if result is None or result.strip() == "":
+            raise Exception("Build number is not set")
+        return result.strip()
+
+    @property
     def version(self):
+        """Returns the version of the project in X.Y.Z+Build"""
         return self._version
 
     @property

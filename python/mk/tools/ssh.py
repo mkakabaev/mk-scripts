@@ -10,6 +10,9 @@ from ..core import (
 )
 
 class SSH(ReprBuilderMixin):
+    """
+        options: generic list of arguments like ["-o", "option", "-i", "keyfile"] etc
+    """
     def __init__(self, user: str, host: str, options: list[str] = []):
         self.user = user
         self.host = host
