@@ -2,6 +2,7 @@
 # cSpell: words
 
 import collections.abc
+import os
 from typing import Callable, Any
 
 
@@ -57,3 +58,16 @@ class Safe:
                 result += Safe.to_list(r, mapper)
             return result
         return [mapper(values)]
+
+    @staticmethod
+    def to_string_list(values):
+        return Safe.to_list(values, Safe.stringify)
+
+
+    @staticmethod
+    def stringify(value):
+        if isinstance(value, str):
+            return value
+        if isinstance(value, os.PathLike):  # Path and file entries are also os.PathLike
+            return str(os.fspath(value))
+        return str(value)

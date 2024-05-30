@@ -16,14 +16,6 @@ from .misc import Safe
 from .to_string_builder import ReprBuilderMixin, ToStringBuilder
 
 
-def _stringify_value(value):
-    if isinstance(value, str):
-        return value
-    if isinstance(value, os.PathLike):  # Path and file entries are also os.PathLike
-        return str(os.fspath(value))
-    return str(value)
-
-
 class RunnerResult(ReprBuilderMixin):
     def __init__(self, output: str, code: int, runner):
         self.output = output
@@ -56,10 +48,11 @@ class RunnerResult(ReprBuilderMixin):
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.add_value(self.runner.title, quoted=True)
 
+
 class Runner:
-    def __init__(self, command, args=None, title: str|None = None):
-        self.command = _stringify_value(command)
-        self.args = Safe.to_list(args, _stringify_value)
+    def __init__(self, command, args=None, title: str | None = None):
+        self.command = Safe.stringify(command)
+        self.args = Safe.to_string_list(args)
         self.title = title
         self._table = None
 
@@ -75,6 +68,10 @@ class Runner:
     #     return p.returncode
 
     def add_info(self, name, value):
+
+        if value is None:
+            return
+
         table = self._table
         if table is None:
             table = Table(
@@ -146,7 +143,7 @@ class Runner:
         display_output: bool = True,
         notify_completion: bool = False,
         # the input. Will be converted to UTF8
-        input_data: str|None = None,
+        input_data: str | None = None,
     ):
         t = TimeCounter()
 
@@ -191,7 +188,7 @@ class Runner:
                 for line in lines:
                     Console.write(line.strip(), to_display=display_output)
                     outputs.append(line)
-                    
+
             else:
                 if p.stdout is not None:
                     with p.stdout:
@@ -233,8 +230,36 @@ class Runner:
     #     self.args.append(self.value_to_str(value))
 
     def add_args(self, args):
-        for arg1 in Safe.to_list(args, _stringify_value):
-            self.args.append(_stringify_value(arg1))
+        for arg1 in Safe.to_string_list(args):
+            self.args.append(arg1)
 
     def add_arg_pair_eq(self, param, value):
-        self.args.append(f"{_stringify_value(param)}={_stringify_value(value)}")
+        """
+        Adds a parameter-value pair to the list of arguments in the form of `param=value`.
+        Ignores value is it is None.
+
+        Args:
+            param: The parameter name.
+            value: The parameter value.
+
+        Returns:
+            None
+        """
+        if value is not None:
+            self.args.append(f"{Safe.stringify(param)}={Safe.stringify(value)}")
+
+    def add_dash2_arg_pair(self, param, value):
+        """
+        Adds a parameter-value pair to the list of arguments in the form of `--param` `value`.
+        Ignores value is it is None.
+
+        Args:
+            param: The parameter name.
+            value: The parameter value.
+
+        Returns:
+            None
+        """
+        if value is not None:
+            self.args.append(f"--{Safe.stringify(param)}")
+            self.args.append(Safe.stringify(value))

@@ -9,7 +9,7 @@ import shutil
 import pathlib
 from io import TextIOBase
 from enum import Enum
-from typing import Callable
+from typing import Callable, Any
 
 from .runner import Runner
 from .to_string_builder import ReprBuilderMixin, ToStringBuilder
@@ -162,20 +162,24 @@ class Path:
     def has_extension(self, extension: str) -> bool:
         return self.extension == extension  # mktodo: case insensitive comparison?
 
-    def set_extension(self, extension: str):
+    def set_extension(self, extension: str) -> 'Path':
         if not extension.startswith("."):
             extension = "." + extension
         p, e = os.path.splitext(self._path)
         if e != extension:
             self._path = p + extension
+        return self
 
-    def ensure_exists(self):
+
+    def ensure_exists(self) -> 'Path':
         if not self.exists:
             int_die(f"{self}: does not exist")
+        return self
 
-    def ensure_exists_as_directory(self):
+    def ensure_exists_as_directory(self) -> 'Path':
         if not self.exists_as_directory:
             int_die(f"{self}: does not exist (or not a directory)")
+        return self
 
 
 class FSEntry(ReprBuilderMixin, metaclass=abc.ABCMeta):

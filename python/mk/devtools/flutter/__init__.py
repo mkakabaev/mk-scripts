@@ -9,10 +9,7 @@ from .project import Project
 from ...core import Runner
 from ..xcode import Xcode
 
-__all__ = [
-    "Assets",
-    "Project"
-]
+__all__ = ["Assets", "Project"]
 
 
 class BuildMode(Enum):
@@ -43,24 +40,24 @@ class _AppNamer:
         self.build_mode = None
         self.project_version: Optional[str]
 
-    def get(self, postfix = "", include_version = False):
+    def get(self, postfix="", include_version=False):
         components = []
         components.append(self.prefix)
         if self.flavor:
-            components.append(self.flavor)            
+            components.append(self.flavor)
         if self.build_mode:
-            components.append(self.build_mode)            
+            components.append(self.build_mode)
         if include_version and self.project_version:
-            components.append(self.project_version)            
+            components.append(self.project_version)
         return "-".join(components) + postfix
 
     @property
     def flutter_app_bundle_folder(self):
         components = []
         if self.flavor:
-            components.append(self.flavor)            
+            components.append(self.flavor)
         if self.build_mode:
-            components.append(self.build_mode.capitalize())            
+            components.append(self.build_mode.capitalize())
         return "".join(components)
 
 
@@ -77,7 +74,10 @@ class _FlutterRunner:
     def add_hdr(self, name, param):
         self._runner.add_info(name, param)
 
-    def set_project(self, project: Project,):
+    def set_project(
+        self,
+        project: Project,
+    ):
         assert isinstance(project, Project)
         self._project = project
         self.add_hdr("Project", project)
@@ -104,29 +104,39 @@ class _FlutterRunner:
             self._runner.add_args(["-t", main_module])
             self.add_hdr("Main module", main_module)
 
-    def add_environment(self, env: Optional[Dict[str, str]]): # pylint: disable=unsubscriptable-object
+    def add_environment(
+        self, env: Optional[Dict[str, str]]
+    ):  # pylint: disable=unsubscriptable-object
         if env is not None:
-            for name, value in env.items():                
+            for name, value in env.items():
                 self._runner.add_args(f"--dart-define={name}={value}")
             self.add_hdr("Environment", env)
 
     def run(self):
         if self._project is not None:
             self._project.make_directory_current()
-        self._runner.run(
-            display_output=False, 
-            notify_completion=True
-        )
+        self._runner.run(display_output=False, notify_completion=True)
 
 
-# mktodo: add to ios/android builds
 class FlutterResult(ReprBuilderMixin):
     def __init__(self):
         self.project_version: str | None = None
         self.archive_file: File | None = None
-        self.archive_dir = None
+        self.archive_dir: Directory | None = None
         self.mac_app_output_dir: Directory | None = None
         self.mac_app_development_output_dir: Directory | None = None
+        self.ad_hoc_directory: Directory | None = None
+        self.app_store_directory: Directory | None = None
+        self.app_store_upload_directory: Directory | None = None
+        self.apk_file: File | None = None
+
+    @property
+    def ad_hoc_ipa_file(self) -> File | None:
+        files = Directory(self.ad_hoc_directory, must_exist=True).list()
+        for file in files:
+            if isinstance(file, File) and file.path.fspath.endswith(".ipa"):
+                return file
+        return None
 
     def configure_repr_builder(self, sb: ToStringBuilder):
         pass
@@ -139,21 +149,21 @@ class Flutter(ReprBuilderMixin):
         self._load()
 
     def _load(self):
-        r = Runner("flutter", "--version", title='flutter --version')
+        r = Runner("flutter", "--version", title="flutter --version")
         result = r.run_silent()
         self._version = result.search(r"Flutter ([0-9.]+)", 1, tag="version")
         self._channel = result.search(r"channel\s+(\S+)", 1, tag="channel")
 
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.add_value(f"{self._version}/{self._channel}")
-        
+
     def clean(self, project: Project):  # pylint: disable=no-self-use
         r = _FlutterRunner(title="Clean")
-        r.add_args("clean")        
+        r.add_args("clean")
         r.set_project(project)
         r.run()
 
-    def build_ios( 
+    def build_ios(
         self,
         project: Project,
         flavor=None,
@@ -161,20 +171,24 @@ class Flutter(ReprBuilderMixin):
         main_module=None,
         environment: Optional[Dict[str, str]] = None,
         clean_before: bool = True,
-        analyze_size: bool = False,        
-        archive_dir = None,  # Xcode archive
+        analyze_size: bool = False,
+        archive_dir=None,  # Xcode archive
         scheme: Optional[str] = None,  # Xcode scheme
         ad_hoc_export: bool = False,
         app_store_export: bool = False,
         app_store_upload: bool = False,
-        reveal_result: bool = True
-    ):   
+        reveal_result: bool = True,
+    ) -> FlutterResult:
         # check state and args
         assert isinstance(project, Project)
 
         # clean flutter
         if clean_before:
             self.clean(project=project)
+
+        # starting collecting result data
+        result = FlutterResult()
+        result.project_version = project.version
 
         # configure and run
         r = _FlutterRunner(title="Build iOS")
@@ -185,9 +199,9 @@ class Flutter(ReprBuilderMixin):
         r.set_analyze_size(analyze_size)
         r.set_main_module(main_module)
         r.add_environment(environment)
-        r.add_hdr('Ad Hoc build', ad_hoc_export)
-        r.add_hdr('AppStore build', app_store_export)
-        r.add_hdr('Upload to AppStore', app_store_upload)
+        r.add_hdr("Ad Hoc build", ad_hoc_export)
+        r.add_hdr("AppStore build", app_store_export)
+        r.add_hdr("Upload to AppStore", app_store_upload)
 
         # configure xcode stuff
         archive_file = None
@@ -198,9 +212,11 @@ class Flutter(ReprBuilderMixin):
         do_export_ad_hoc = False
         do_export_app_store = False
         do_upload_app_store = False
-        if archive_dir is not None: 
+        if archive_dir is not None:
             do_archive = True
-            archive_file = File([archive_dir, r.namer.get(postfix=".xcarchive", include_version=True)])
+            archive_file = File(
+                [archive_dir, r.namer.get(postfix=".xcarchive", include_version=True)]
+            )
             archive_file.remove()
             if ad_hoc_export:
                 do_export_ad_hoc = True
@@ -209,10 +225,12 @@ class Flutter(ReprBuilderMixin):
             if app_store_export:
                 do_export_app_store = True
                 app_store_directory = Directory([archive_dir, "app_store"])
-                app_store_directory.remove()                
+                app_store_directory.remove()
             if app_store_upload:
                 do_upload_app_store = True
-                app_store_upload_directory = Directory([archive_dir, "app_store_upload"])
+                app_store_upload_directory = Directory(
+                    [archive_dir, "app_store_upload"]
+                )
                 app_store_upload_directory.remove()
 
         # Run flutter. On completion stop unless archiving is ordered
@@ -220,7 +238,13 @@ class Flutter(ReprBuilderMixin):
         if not do_archive:
             if reveal_result:
                 Directory(project.ios_app).reveal()
-            return
+            return result
+
+        result.archive_file = archive_file
+        result.archive_dir = archive_dir
+        result.ad_hoc_directory = ad_hoc_directory
+        result.app_store_directory = app_store_directory
+        result.app_store_upload_directory = app_store_upload_directory
 
         # archive the project
         workspace = project.xcode_ios_workspace
@@ -235,15 +259,15 @@ class Flutter(ReprBuilderMixin):
             xcode.export_ad_hoc(
                 archive_file=archive_file,
                 output_dir=ad_hoc_directory,
-                display_output=False
+                display_output=False,
             )
 
         # do app-store export
         if do_export_app_store:
-            xcode.export_app_store( 
+            xcode.export_app_store(
                 archive_file=archive_file,
                 output_dir=app_store_directory,
-                display_output=False
+                display_output=False,
             )
 
         # do upload to app store
@@ -252,13 +276,15 @@ class Flutter(ReprBuilderMixin):
                 archive_file=archive_file,
                 output_dir=app_store_upload_directory,
                 is_upload=True,
-                display_output=False
-            )        
+                display_output=False,
+            )
 
         if reveal_result:
             File(archive_file).reveal()
 
-    def build_macos( 
+        return result
+
+    def build_macos(
         self,
         project: Project,
         flavor=None,
@@ -266,14 +292,14 @@ class Flutter(ReprBuilderMixin):
         main_module=None,
         environment: Optional[Dict[str, str]] = None,
         clean_before: bool = True,
-        analyze_size: bool = False,        
-        archive_dir = None,  # Xcode archive, optional, but required for any exporting
+        analyze_size: bool = False,
+        archive_dir=None,  # Xcode archive, optional, but required for any exporting
         scheme: Optional[str] = None,  # Xcode scheme
         app_export: bool = False,
         development_app_export: bool = False,
         # app_store_export: bool = False,
         # app_store_upload: bool = False,
-        reveal_result: bool = True
+        reveal_result: bool = True,
     ) -> FlutterResult:
 
         # check state and args
@@ -296,9 +322,11 @@ class Flutter(ReprBuilderMixin):
         r.set_analyze_size(analyze_size)
         r.set_main_module(main_module)
         r.add_environment(environment)
-        r.add_hdr('Export App from archive', app_export)
-        r.add_hdr('Export App from archive as Development build', development_app_export)
-        
+        r.add_hdr("Export App from archive", app_export)
+        r.add_hdr(
+            "Export App from archive as Development build", development_app_export
+        )
+
         # r.add_hdr('AppStore build', app_store_export)
         # r.add_hdr('Upload to AppStore', app_store_upload)
 
@@ -311,16 +339,18 @@ class Flutter(ReprBuilderMixin):
         # do_upload_app_store = False
 
         do_archive = False
-        if archive_dir is not None: 
+        if archive_dir is not None:
             do_archive = True
-            archive_file = File([archive_dir, r.namer.get(postfix=".xcarchive", include_version=True)])
+            archive_file = File(
+                [archive_dir, r.namer.get(postfix=".xcarchive", include_version=True)]
+            )
             archive_file.remove()
             path_to_reveal = archive_file
             result.archive_file = archive_file
             result.archive_dir = archive_dir
 
         if app_export or development_app_export:
-            if not do_archive: 
+            if not do_archive:
                 die("<archive_dir> is required for <app_export> option")
 
         app_directory = None
@@ -337,12 +367,11 @@ class Flutter(ReprBuilderMixin):
             path_to_reveal = dev_app_directory
             result.mac_app_development_output_dir = dev_app_directory
 
-
         # Not implemented yet
         # if app_store_export:
         #     do_export_app_store = True
         #     app_store_directory = Directory([archive_dir, "app_store"])
-        #     app_store_directory.remove()                
+        #     app_store_directory.remove()
         # if app_store_upload:
         #     do_upload_app_store = True
         #     app_store_upload_directory = Directory([archive_dir, "app_store_upload"])
@@ -359,7 +388,7 @@ class Flutter(ReprBuilderMixin):
             scheme = flavor if flavor is not None else "Runner"
         xcode = Xcode()
         xcode.set_destination_macos()
-        xcode.archive(workspace, scheme=scheme, archive_file=archive_file)        
+        xcode.archive(workspace, scheme=scheme, archive_file=archive_file)
 
         # do app export
         if app_export:
@@ -379,7 +408,7 @@ class Flutter(ReprBuilderMixin):
 
         # # do app-store export
         # if do_export_app_store:
-        #     xcode.export_app_store( 
+        #     xcode.export_app_store(
         #         archive_file=archive_file,
         #         output_dir=app_store_directory,
         #     )
@@ -390,7 +419,7 @@ class Flutter(ReprBuilderMixin):
         #         archive_file=archive_file,
         #         output_dir=app_store_upload_directory,
         #         is_upload=True
-        #     )        
+        #     )
 
         if reveal_result:
             File(path_to_reveal).reveal()
@@ -408,7 +437,7 @@ class Flutter(ReprBuilderMixin):
         reveal_result: bool = True,
         clean_before: bool = True,
         # analyze_size: bool = False
-    ):
+    ) -> FlutterResult:
 
         # check state and args
         assert isinstance(project, Project)
@@ -416,6 +445,10 @@ class Flutter(ReprBuilderMixin):
         # clean
         if clean_before:
             self.clean(project=project)
+
+        # starting collecting result data
+        result = FlutterResult()
+        result.project_version = project.version
 
         # configure
         r = _FlutterRunner(title="Build APK")
@@ -430,7 +463,9 @@ class Flutter(ReprBuilderMixin):
         src_app_name = r.namer.get(".apk")
         dst_app_name = r.namer.get(".apk", include_version=True)
         output_d = Directory(output_dir)
-        build_f = File([project.path, "build", "app", "outputs", "flutter-apk", src_app_name])
+        build_f = File(
+            [project.path, "build", "app", "outputs", "flutter-apk", src_app_name]
+        )
         output_f = File([output_d.path, dst_app_name])
         r.add_hdr("Build file name", dst_app_name)
         r.add_hdr("Output", output_d.path)
@@ -449,6 +484,9 @@ class Flutter(ReprBuilderMixin):
         output_f.ensure_exists()
         if reveal_result:
             output_f.reveal()
+
+        result.apk_file = output_f
+        return result
 
     def build_app_bundle(
         self,
@@ -484,7 +522,17 @@ class Flutter(ReprBuilderMixin):
         src_app_name = r.namer.get(".aab")
         dst_app_name = r.namer.get(".aab", include_version=True)
         output_d = Directory(output_dir)
-        build_f = File([project.path, "build", "app", "outputs", "bundle", r.namer.flutter_app_bundle_folder, src_app_name])
+        build_f = File(
+            [
+                project.path,
+                "build",
+                "app",
+                "outputs",
+                "bundle",
+                r.namer.flutter_app_bundle_folder,
+                src_app_name,
+            ]
+        )
         output_f = File([output_d.path, dst_app_name])
         r.add_hdr("Build file name", dst_app_name)
         r.add_hdr("Output", output_d.path)

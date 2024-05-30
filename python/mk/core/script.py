@@ -21,7 +21,8 @@ from .assets import Assets
 # import inspect
 # print(inspect.currentframe())
 # print(inspect.getfile(inspect.currentframe()))
-# print(f"---{sys.argv}---") 
+# print(f"---{sys.argv}---")
+
 
 class _SignalHandler:
     def __init__(self, signal_no, handler):
@@ -40,9 +41,9 @@ class _SignalHandler:
 
 class ExitActionConfig:
     def __init__(
-        self, 
-        notification_config: NotificationConfig | None = None, 
-        console_style: ConsoleStyle | None = None
+        self,
+        notification_config: NotificationConfig | None = None,
+        console_style: ConsoleStyle | None = None,
     ):
         self.notification_config = notification_config
         self.console_style = console_style
@@ -53,10 +54,11 @@ class _StackItem:
         self.path = Path(path)
         self.directory = Directory(self.path.parent)
         self.time_counter = TimeCounter()
-    
+
     @property
     def name(self):
-        return re.sub( r"[.]py$", "", self.path.base_name).upper()
+        return re.sub(r"[.]py$", "", self.path.base_name).upper()
+
 
 class _Stack:
     def __init__(self):
@@ -73,7 +75,7 @@ class _Stack:
 
     @property
     def display_path(self):
-        return f"[{self._get_name()}]" 
+        return f"[{self._get_name()}]"
 
     @property
     def display_name_ntf(self):
@@ -86,12 +88,44 @@ class _Stack:
     @property
     def is_nested(self) -> bool:
         return len(self.items) > 1
-        
+
+
+class ScriptClipboard:
+    """A simple clipboard for sharing data between scripts. Attached to Script class."""
+
+    def __init__(self):
+        self._data = {}
+
+    def __getitem__(self, key: str):
+        return self._data[key]
+
+    def get(self, key: str):
+        return self._data.get(key)
+
+    def __setitem__(self, key: str, value):
+        self._data[key] = value
+
+    def dump(self):
+        print("Script Clipboard: {")
+        for k, v in self._data.items():
+            print(f"  {k}: {v}")
+        print("}")
+
+    def append_to_list(self, key: str, value):
+        if key not in self._data:
+            self._data[key] = []
+        self._data[key].append(value)
+
+    def get_list(self, key: str) -> list:
+        if key not in self._data:
+            self._data[key] = []
+        return self._data[key]
+
 
 class Script:
 
     @classmethod
-    def _init(cls):        
+    def _init(cls):
         cls._stack = _Stack()
         cls._stack.push(sys.argv[0])
         # cls.directory = Directory(cls.path.parent)
@@ -101,7 +135,7 @@ class Script:
         _SignalHandler(signal.SIGTERM, cls._on_sig_term)
         atexit.register(cls._on_default_exit)
         cls._original_except_hook = sys.excepthook
-        sys.excepthook = cls._except_hook        
+        sys.excepthook = cls._except_hook
 
     # not needed yet
     # @classmethod
@@ -109,47 +143,45 @@ class Script:
     #     assert handler is not None
     #     cls._exit_handlers.append(handler)
 
+    clipboard: ScriptClipboard = ScriptClipboard()
+
     _stack: _Stack
 
     _original_except_hook = None
 
     exception_exit_action_config = ExitActionConfig(
         notification_config=NotificationConfig(
-            sound=NotificationSound.ERROR,
-            icon=Assets.get_icon('error_icon')
+            sound=NotificationSound.ERROR, icon=Assets.get_icon("error_icon")
         ),
-        console_style=ConsoleStyle.FATAL_ERROR     
+        console_style=ConsoleStyle.FATAL_ERROR,
     )
 
     term_exit_action_config = ExitActionConfig(
         notification_config=NotificationConfig(
-            sound=NotificationSound.ERROR,
-            icon=Assets.get_icon('error_icon')
+            sound=NotificationSound.ERROR, icon=Assets.get_icon("error_icon")
         ),
-        console_style=ConsoleStyle.FATAL_ERROR     
+        console_style=ConsoleStyle.FATAL_ERROR,
     )
 
     die_exit_action_config = ExitActionConfig(
         notification_config=NotificationConfig(
-            sound=NotificationSound.ERROR,
-            icon=Assets.get_icon('error_icon')
+            sound=NotificationSound.ERROR, icon=Assets.get_icon("error_icon")
         ),
-        console_style=ConsoleStyle.FATAL_ERROR     
+        console_style=ConsoleStyle.FATAL_ERROR,
     )
 
     success_exit_action_config = ExitActionConfig(
         notification_config=NotificationConfig(
-            sound=NotificationSound.SUCCESS,
-            icon=Assets.get_icon('success_icon')
+            sound=NotificationSound.SUCCESS, icon=Assets.get_icon("success_icon")
         ),
-        console_style=ConsoleStyle.SUCCESS     
+        console_style=ConsoleStyle.SUCCESS,
     )
 
     default_exit_action_config = ExitActionConfig(
         # notification_config=NotificationConfig(
         #     sound=NotificationSound.SUCCESS,
         # ),
-        # console_style=ConsoleStyle.SUCCESS      
+        # console_style=ConsoleStyle.SUCCESS
     )
 
     @classmethod
@@ -158,10 +190,10 @@ class Script:
         config: ExitActionConfig,
         message: str,
         details: str | None = None,
-        do_show_notification: bool = True
+        do_show_notification: bool = True,
     ):
         # must be called only once
-        if cls._on_exit_called:  
+        if cls._on_exit_called:
             return
         cls._on_exit_called = True
 
@@ -172,16 +204,16 @@ class Script:
         # for handler in cls._exit_handlers:
         #     handler(reason)
 
-        elapsed_duration = cls._stack.current.time_counter.elapsed_duration   
+        elapsed_duration = cls._stack.current.time_counter.elapsed_duration
 
-        # print the final message and flush again 
-        if config.console_style is not None:            
+        # print the final message and flush again
+        if config.console_style is not None:
             Console.write_empty_line()
 
             name = cls._stack.display_path
             s = f"{name} {message} in {elapsed_duration}"
             if details is not None and details != "":
-                s = f"{s} • {details}" 
+                s = f"{s} • {details}"
             Console.write(s, style=config.console_style)
             Console.write_empty_line()
 
@@ -196,14 +228,16 @@ class Script:
                 config=config.notification_config,
             )
 
-    @classmethod    
+    @classmethod
     @property
     def path(cls) -> Path:
         return cls._stack.current.path
 
-    @classmethod    
-    def relative_path(cls, subpath = None) -> Path:
-        '''Relative path to the current script directory. If subpath is provided, it is appended to the current script directory path.'''
+    @classmethod
+    def relative_path(cls, subpath=None) -> Path:
+        """
+        Relative path to the current script directory. If subpath is provided, it is appended to the current script directory path.
+        """
         return Path(cls._stack.current.path.parent) + subpath
 
     @classmethod
@@ -215,8 +249,8 @@ class Script:
         cls._on_exit2(cls.term_exit_action_config, "terminated")
 
     @classmethod
-    def _except_hook(cls, exc_type, value, traceback):        
-        if exc_type == KeyboardInterrupt:        
+    def _except_hook(cls, exc_type, value, traceback):
+        if exc_type == KeyboardInterrupt:
             message = "is interrupted by user"
             details = None
         else:
@@ -224,7 +258,9 @@ class Script:
             details = f"{exc_type.__name__}({value})"
         cls._on_exit2(cls.exception_exit_action_config, message, details)
         if cls._original_except_hook is not None:
-            cls._original_except_hook(exc_type, value, traceback)  #pylint: disable=not-callable
+            cls._original_except_hook(
+                exc_type, value, traceback
+            )  # pylint: disable=not-callable
 
     @classmethod
     def die(cls, message: str) -> NoReturn:
@@ -234,7 +270,12 @@ class Script:
     @classmethod
     def success(cls, message: str | None = None):
         full_effects = not cls._stack.is_nested
-        cls._on_exit2(cls.success_exit_action_config, "completed", message, do_show_notification=full_effects)
+        cls._on_exit2(
+            cls.success_exit_action_config,
+            "completed",
+            message,
+            do_show_notification=full_effects,
+        )
         if full_effects:
             cls.exit(0)
 
@@ -247,7 +288,10 @@ class Script:
         time.sleep(interval)
 
     @classmethod
-    def run_subscript(cls, path):
+    def run_subscript(cls, path, init_globals=None):
+        """
+        Returns the resulting module globals dictionary.
+        """
         try:
             p = Path(path)
             if not p.is_absolute:
@@ -259,13 +303,13 @@ class Script:
             Console.write_empty_line()
             try:
                 cls._stack.push(p.fspath)
-                run_path(p.fspath)
+                return run_path(p.fspath, init_globals=init_globals)
 
             finally:
                 cls._on_exit_called = False
-                cls._stack.pop()                
+                cls._stack.pop()
                 Console.write_empty_line()
-                Console.write_raw(Rule(title=f"Exiting {p}..."))    
+                Console.write_raw(Rule(title=f"Exiting {p}..."))
                 Console.write_empty_line()
 
         except Exception as e:
@@ -280,7 +324,9 @@ class Script:
             if p.exists_as_directory:
                 p += "__init__.py"
                 if not p.exists_as_file:
-                    raise Exception(f"{path} refers to a module directory but {p} does not exist")
+                    raise Exception(
+                        f"{path} refers to a module directory but {p} does not exist"
+                    )
             else:
                 if not p.exists_as_file:
                     raise Exception(f"{p} does not exist")
@@ -289,15 +335,15 @@ class Script:
             if spec is None:
                 raise Exception(f"Unable to create a spec for [{path}]")
             module = importlib.util.module_from_spec(spec)
-            sys.modules[spec.name] = module 
+            sys.modules[spec.name] = module
             if spec.loader is None:
                 raise Exception(f"Unable to create a loader for [{path}]")
-            spec.loader.exec_module(module) 
+            spec.loader.exec_module(module)
             return module
 
         except Exception as e:
             cls.die(f"Unable to import module [{path}]: {e}")
-            return None # to make the analyzer happy
+            return None  # to make the analyzer happy
 
 
 Script._init()  # pylint: disable=protected-access

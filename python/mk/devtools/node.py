@@ -1,5 +1,14 @@
 import json
-from ..core import ReprBuilderMixin, Runner, die, ToStringBuilder, File, Path, Directory, Safe
+from ..core import (
+    ReprBuilderMixin,
+    Runner,
+    die,
+    ToStringBuilder,
+    File,
+    Path,
+    Directory,
+    Safe,
+)
 
 
 class Project(ReprBuilderMixin):
@@ -39,11 +48,11 @@ class NodeJS(ReprBuilderMixin):
         pass
 
     def npm_run(
-        self, 
-        project: Project, 
-        args=None, 
+        self,
+        project: Project,
+        args=None,
         display_output=False,
-        title: str="Running npm script"
+        title: str = "Running npm script",
     ):  # pylint: disable=no-self-use
         args = Safe.to_list(args)
 
@@ -55,10 +64,7 @@ class NodeJS(ReprBuilderMixin):
         r.run(display_output=display_output, notify_completion=True)
 
     def npx_run(
-        self, 
-        args, 
-        display_output=False,
-        title: str="Running npm script"
+        self, args, display_output=False, title: str = "Running npm script"
     ):  # pylint: disable=no-self-use
         args = Safe.to_list(args)
 
