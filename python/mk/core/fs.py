@@ -112,7 +112,7 @@ class Path:
         return os.path.isdir(self._path)
 
     @property
-    def is_absolute(self):
+    def is_absolute(self) -> bool:
         return pathlib.Path(self.fspath).is_absolute()
 
     @property

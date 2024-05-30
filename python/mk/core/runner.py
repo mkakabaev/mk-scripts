@@ -50,14 +50,18 @@ class RunnerResult(ReprBuilderMixin):
 
 
 class Runner:
+    """ Note that command also can be an array. Just to convenience. First element is the command, the rest are added to arguments."""
     def __init__(self, command, args=None, title: str | None = None):
-        self.command = Safe.stringify(command)
+        self.set_command(command)
         self.args = Safe.to_string_list(args)
         self.title = title
         self._table = None
 
+    def set_command(self, command):
+        self._command = Safe.to_string_list(command)
+
     def _full_args(self):
-        return [self.command] + list(map(str, self.args))
+        return self._command + list(map(str, self.args))
 
     def _full_shell_cmd(self):  # for using with shell=True
         return " ".join(map(shlex.quote, self._full_args()))
@@ -112,7 +116,7 @@ class Runner:
 
         table.add_row(name, expand_value(value))
 
-    def run_silent(self) -> RunnerResult:
+    def run_silent(self, die_on_error: bool = True) -> RunnerResult:
         cmd = self._full_shell_cmd()
         outputs = []
         p = subprocess.Popen(
@@ -128,7 +132,7 @@ class Runner:
                     line = line_b.decode("utf-8")
                     outputs.append(line)
         result_code = p.wait()
-        if result_code:
+        if result_code and die_on_error:
             int_die(
                 f"Executing '{Safe.first_available([self.title, cmd])}' failed with exit code {result_code}."
             )

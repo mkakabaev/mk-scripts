@@ -61,12 +61,35 @@ class _AppNamer:
         return "".join(components)
 
 
-class _FlutterRunner:
-    def __init__(self, title):
-        self._runner = Runner("flutter")
-        self._runner.title = f"Flutter: {title}"
+class FlutterSDK(ReprBuilderMixin):
+    def __init__(self):
+        self.version = "?"
+        self.channel = "?"
+        self.fvm_version = None
+        self.command = "flutter"
+        self._load()
+
+    def _load(self):
+        fvm_r = Runner("fvm", "--version").run_silent(die_on_error=False)
+        if fvm_r.code == 0:
+            self.fvm_version = fvm_r.search(r"([0-9.]+)", 1, tag="version")
+            self.command = ["fvm", "flutter"]
+        r = Runner(self.command, "--version", title=f"{self.command} --version")
+        result = r.run_silent()
+        self.version = result.search(r"Flutter ([0-9.]+)", 1, tag="version")
+        self.channel = result.search(r"channel\s+(\S+)", 1, tag="channel")
+
+    @property
+    def has_vfm(self):
+        return self.fvm_version is not None
+
+class _FlutterProjectRunner:
+    def __init__(self, title: str, project: Project):
+        self._runner = Runner("<_unknown_flutter_>", title=f"Flutter: {title}")
         self._project = None
         self.namer = _AppNamer()
+        self.set_project(project)
+        self._sdk_info_added = False
 
     def add_args(self, args):
         self._runner.add_args(args)
@@ -81,6 +104,8 @@ class _FlutterRunner:
         assert isinstance(project, Project)
         self._project = project
         self.add_hdr("Project", project)
+        self.add_hdr("Project Path", project.path)
+        self.add_hdr("Project FVM Version", project.fvm_version)
         self.namer.project_version = project.version
 
     def set_flavor(self, flavor):
@@ -107,14 +132,34 @@ class _FlutterRunner:
     def add_environment(
         self, env: Optional[Dict[str, str]]
     ):  # pylint: disable=unsubscriptable-object
-        if env is not None:
+        if env is not None and len(env) > 0:
             for name, value in env.items():
                 self._runner.add_args(f"--dart-define={name}={value}")
             self.add_hdr("Environment", env)
 
     def run(self):
+        
         if self._project is not None:
             self._project.make_directory_current()
+        
+        # get the SDK info, display it, configure command. Do it here because it depends on folder 
+        flutter_sdk = FlutterSDK()
+        self._runner.set_command(flutter_sdk.command)
+        
+        if self._project is not None:
+            p_ver = self._project.fvm_version
+            if p_ver is not None:
+                if p_ver != flutter_sdk.version:
+                    die(f"Flutter version mismatch: Project required {p_ver}, SDK is {flutter_sdk.version}")  
+            
+        # add SDK info to the runner
+        if not self._sdk_info_added:
+            self._sdk_info_added = True
+            s = f"{flutter_sdk.version}/{flutter_sdk.channel}"
+            if flutter_sdk.has_vfm:
+                s += f" FVM({flutter_sdk.fvm_version})"
+            self.add_hdr("Flutter SDK", s)
+
         self._runner.run(display_output=False, notify_completion=True)
 
 
@@ -144,23 +189,30 @@ class FlutterResult(ReprBuilderMixin):
 
 class Flutter(ReprBuilderMixin):
     def __init__(self):
-        self._version = "?"
-        self._channel = "?"
-        self._load()
+        # self._version = "?"
+        # self._channel = "?"
+        # self._load()
+        pass
 
     def _load(self):
-        r = Runner("flutter", "--version", title="flutter --version")
-        result = r.run_silent()
-        self._version = result.search(r"Flutter ([0-9.]+)", 1, tag="version")
-        self._channel = result.search(r"channel\s+(\S+)", 1, tag="channel")
+        # fvm_r = Runner("fvm", "--version").run_silent(die_on_error=False)
+        # if fvm_r.code == 0:
+        #     self._fvm_version = fvm_r.search(r"([0-9.]+)", 1, tag="version")
+        # else:
+        #     self._fvm_version = None
+        # r = Runner("flutter", "--version", title="flutter --version")
+        # result = r.run_silent()
+        # self._version = result.search(r"Flutter ([0-9.]+)", 1, tag="version")
+        # self._channel = result.search(r"channel\s+(\S+)", 1, tag="channel")
+        pass
 
     def configure_repr_builder(self, sb: ToStringBuilder):
-        sb.add_value(f"{self._version}/{self._channel}")
+        # sb.add_value(f"{self._version}/{self._channel}")
+        pass
 
     def clean(self, project: Project):  # pylint: disable=no-self-use
-        r = _FlutterRunner(title="Clean")
+        r = _FlutterProjectRunner(title="Clean", project=project)
         r.add_args("clean")
-        r.set_project(project)
         r.run()
 
     def build_ios(
@@ -191,9 +243,8 @@ class Flutter(ReprBuilderMixin):
         result.project_version = project.version
 
         # configure and run
-        r = _FlutterRunner(title="Build iOS")
+        r = _FlutterProjectRunner(title="Build iOS", project=project)
         r.add_args(["build", "ios"])
-        r.set_project(project)
         r.set_flavor(flavor)
         r.set_build_mode(build_mode)
         r.set_analyze_size(analyze_size)
@@ -314,9 +365,8 @@ class Flutter(ReprBuilderMixin):
         result.project_version = project.version
 
         # configure and run
-        r = _FlutterRunner(title="Build macOS")
+        r = _FlutterProjectRunner(title="Build macOS", project=project)
         r.add_args(["build", "macos"])
-        r.set_project(project)
         r.set_flavor(flavor)
         r.set_build_mode(build_mode)
         r.set_analyze_size(analyze_size)
@@ -451,9 +501,8 @@ class Flutter(ReprBuilderMixin):
         result.project_version = project.version
 
         # configure
-        r = _FlutterRunner(title="Build APK")
+        r = _FlutterProjectRunner(title="Build APK", project=project)
         r.add_args(["build", "apk"])
-        r.set_project(project)
         r.set_flavor(flavor)
         r.set_build_mode(build_mode)
         r.set_analyze_size(False)
@@ -509,9 +558,8 @@ class Flutter(ReprBuilderMixin):
             self.clean(project=project)
 
         # configure
-        r = _FlutterRunner(title="Build app bundle")
+        r = _FlutterProjectRunner(title="Build app bundle", project=project)
         r.add_args(["build", "appbundle"])
-        r.set_project(project)
         r.set_flavor(flavor)
         r.set_build_mode(build_mode)
         r.set_analyze_size(False)
@@ -572,10 +620,9 @@ class Flutter(ReprBuilderMixin):
             self.clean(project=project)
 
         # configure
-        r = _FlutterRunner(title="Build and run")
+        r = _FlutterProjectRunner(title="Build and run", project=project)
         r.add_args(["run"])
         r.add_args(["-d", "all"])
-        r.set_project(project)
         r.set_flavor(flavor)
         r.set_build_mode(build_mode)
         r.set_analyze_size(False)

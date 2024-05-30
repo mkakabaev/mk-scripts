@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# cSpell: words iphoneos pubspec
+# cSpell: words iphoneos pubspec fvmrc
 
-import re
+import re, json
 from ...core import (
     ReprBuilderMixin,
     die,
@@ -19,6 +19,7 @@ class Project(ReprBuilderMixin):
         self._name = "?"
         self._description = "?"
         self._version = "?"
+        self._fvm_version = None
 
         pubspec = File([project_dir_path, "pubspec.yaml"], must_exist=True).read_all()
 
@@ -32,6 +33,19 @@ class Project(ReprBuilderMixin):
         self._name = fetch("name", r"^name:\s+(\S+)", 1)
         self._description = fetch("description", r"^description:\s+(\S.*)\s*$", 1)
         self._version = fetch("version", r"^version:\s*(\S+)", 1)
+        
+        # .fvmrc
+        fvmrc = File([project_dir_path, ".fvmrc"]);
+        if fvmrc.path.exists:
+            dict_obj = json.loads(fvmrc.read_all())
+            version = dict_obj.get("flutter")
+            if version is None:
+                die(f"{self}: unable to fetch <flutter> from '.fvmrc' at '{fvmrc.path}'")
+            self._fvm_version = version
+                
+    @property
+    def fvm_version(self):
+        return self._fvm_version            
 
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.typename = "flutter.Project"
