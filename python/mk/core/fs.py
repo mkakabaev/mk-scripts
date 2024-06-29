@@ -334,6 +334,13 @@ class File(FSEntry):
         name = self.path.base_name.lower()
         return name in [".ds_store"]
 
+class TraversedFile:
+    def __init__(self, path: Path):
+        self.path = path
+        self.file = File(path)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.path})" 
 
 class Directory(FSEntry):
 
@@ -352,17 +359,17 @@ class Directory(FSEntry):
         except Exception as e:
             int_die(f"{self}: Unable to make myself the current directory: {e}")
 
-    def ensure_exists(self, create_if_needed: bool = True):
+    def ensure_exists(self, create_if_needed: bool = True) -> 'Directory':
         if self.path.exists:
             if self.path.exists_as_directory:
-                return
+                return self
             int_die(
                 f"{self}: the entry exists in file system but it is not a directory"
             )
         if create_if_needed:
             try:
                 os.makedirs(self.path.fspath)
-                return
+                return self
             except Exception as e:
                 int_die(f"{self}: unable to create directory: {e}")
         int_die(f"{self}: does not exist")
@@ -374,17 +381,24 @@ class Directory(FSEntry):
     def list(self, skip_system_objects=True, sort=False):
         try:
             result = []
-            for _, dirnames, filenames in os.walk(self.path):
+            for dir_name, dirnames, filenames in os.walk(self.path):
                 if sort:
                     dirnames = sorted(dirnames)
                 for d in dirnames:
-                    result.append(Directory([self.path, d]))
+                    result.append(Directory([dir_name, d]))
                 if sort:
                     filenames = sorted(filenames)
                 for f in filenames:
-                    file = File([self.path, f])
+                    file = File([dir_name, f])
                     if not skip_system_objects or not file.is_system:
                         result.append(file)
             return result  # no recurse yet
         except Exception as e:
             int_die(f"{self}: unable to list the directory: {e}")
+            
+    def traverse(self, TraversedFileClass=TraversedFile):
+        for root, d, files in os.walk(self.path):
+            for file in files:
+                yield TraversedFileClass(Path([root, file]))
+                
+

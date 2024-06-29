@@ -21,7 +21,8 @@ __all__ = [
     "DateTime", "DateTimeFormat", "TimeCounter", "Duration", "DurationFormat",
     "NotificationConfig", "show_notification",
     "Safe",
-    "Assets", "IconAsset"
+    "Assets", "IconAsset",
+    "strip_comments",
 ]
 
 # dependencies injection

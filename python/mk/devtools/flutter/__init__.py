@@ -501,7 +501,7 @@ class Flutter(ReprBuilderMixin):
         result.project_version = project.version
 
         # configure
-        r = _FlutterProjectRunner(title="Build APK", project=project)
+        r = _FlutterProjectRunner(title="Build Android APK", project=project)
         r.add_args(["build", "apk"])
         r.set_flavor(flavor)
         r.set_build_mode(build_mode)
@@ -558,7 +558,7 @@ class Flutter(ReprBuilderMixin):
             self.clean(project=project)
 
         # configure
-        r = _FlutterProjectRunner(title="Build app bundle", project=project)
+        r = _FlutterProjectRunner(title="Build Android app bundle (AAB)", project=project)
         r.add_args(["build", "appbundle"])
         r.set_flavor(flavor)
         r.set_build_mode(build_mode)

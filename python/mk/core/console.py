@@ -120,7 +120,7 @@ class Console:
         style: ConsoleStyle | None = None,
         to_display: bool = True,
     ):
-        cls._prev_line_empty = text is None or len(text) == 0 or text.endswith("\n")
+        cls._prev_line_empty = text is None or (isinstance(text, str) and (len(text) == 0 or text.endswith("\n")))
 
         if to_display:
             style_config = cls._resolve_style(style)
