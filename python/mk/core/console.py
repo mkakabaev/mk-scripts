@@ -8,7 +8,7 @@ import rich.text
 import rich.color
 from .misc import Safe
 from .time_utils import Duration, DurationFormat, TimeCounter, script_time_counter
-
+from io import StringIO
 
 class ConsoleStyle(Enum):
     SECTION_HEADER = 1
@@ -69,14 +69,14 @@ class Console:
 
     _status = None
     _rc: rich.console.Console
-    _rcl: rich.console.Console
+    _rc_for_file: rich.console.Console
 
     @classmethod
     def _init(cls):
 
         # underlying console processor. https://rich.readthedocs.io/en/latest/index.html
-        cls._rcl = rich.console.Console(  # pylint: disable=invalid-name
-            highlight=False, markup=False, log_path=False, record=True, width=120
+        cls._rc_for_file = rich.console.Console(  # pylint: disable=invalid-name
+            file=StringIO(), highlight=False, markup=False, log_path=False, record=True, width=120
         )
         cls._rc = rich.console.Console(  # pylint: disable=invalid-name
             highlight=False, markup=False, log_path=False
@@ -108,10 +108,13 @@ class Console:
 
     @classmethod
     def _log(cls, o):
-        with cls._rcl.capture() as _:
-            cls._rcl.log(o)
-            log_text = cls._rcl.export_text()
-            cls._add_to_history(log_text)
+        # with cls._rcl.capture() as _:
+            # cls._rcl.log(o)
+            # log_text = cls._rcl.export_text()
+            # cls._add_to_history(log_text)
+        cls._rc_for_file.log(o)
+        log_text = cls._rc_for_file.export_text()
+        cls._add_to_history(log_text)
 
     @classmethod
     def write(
