@@ -120,13 +120,16 @@ class Path:
         return self.parent is None
 
     @property
-    def parent(self):
+    def parent(self) -> "Path | None":
+        """
+        Returns the parent path as a Path object, or None if this is the root.
+        """
         p = os.path.dirname(self._path)
         if p == self._path:  # not sure if if fully platform independent
             return None
         return Path(p)
 
-    def get_parent(self, level: int = 1):
+    def get_parent(self, level: int = 1) -> "Path | None":
         result = self
         while level > 0 and result is not None:
             result = result.parent
@@ -138,8 +141,13 @@ class Path:
         """Base path name: filename.ext"""
         return str(os.path.basename(self._path))
 
-    def relative(self, level: int = 0):
-        """relative path starting base_name and up to [level] levels"""
+    def relative(self, level: int = 0) -> "Path":
+        """
+        Relative path starting base_name and up to [level] levels
+        If [level] is 0, returns the base_name
+        If [level] is 1, returns the parent/base_name
+        ...
+        """
         components = [self.base_name]
         if level > 0:
             parent = self.parent
@@ -162,7 +170,7 @@ class Path:
     def has_extension(self, extension: str) -> bool:
         return self.extension == extension  # mktodo: case insensitive comparison?
 
-    def set_extension(self, extension: str) -> 'Path':
+    def set_extension(self, extension: str) -> "Path":
         if not extension.startswith("."):
             extension = "." + extension
         p, e = os.path.splitext(self._path)
@@ -170,13 +178,12 @@ class Path:
             self._path = p + extension
         return self
 
-
-    def ensure_exists(self) -> 'Path':
+    def ensure_exists(self) -> "Path":
         if not self.exists:
             int_die(f"{self}: does not exist")
         return self
 
-    def ensure_exists_as_directory(self) -> 'Path':
+    def ensure_exists_as_directory(self) -> "Path":
         if not self.exists_as_directory:
             int_die(f"{self}: does not exist (or not a directory)")
         return self
@@ -334,13 +341,15 @@ class File(FSEntry):
         name = self.path.base_name.lower()
         return name in [".ds_store"]
 
+
 class TraversedFile:
     def __init__(self, path: Path):
         self.path = path
         self.file = File(path)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.path})" 
+        return f"{self.__class__.__name__}({self.path})"
+
 
 class Directory(FSEntry):
 
@@ -359,7 +368,7 @@ class Directory(FSEntry):
         except Exception as e:
             int_die(f"{self}: Unable to make myself the current directory: {e}")
 
-    def ensure_exists(self, create_if_needed: bool = True) -> 'Directory':
+    def ensure_exists(self, create_if_needed: bool = True) -> "Directory":
         if self.path.exists:
             if self.path.exists_as_directory:
                 return self
@@ -378,27 +387,56 @@ class Directory(FSEntry):
     def is_system(self):
         return False
 
-    def list(self, skip_system_objects=True, sort=False):
+    def list(
+        self, skip_system_objects=True, sort=False, recursive=True
+    ) -> list[FSEntry]:
+        """
+        List the contents of the directory.
+        If recursive is True, list the contents of the directory recursively.
+        If sort is True, sort directory and file names. Regardless of the flag directories are listed first.
+        If skip_system_objects is True, skip system objects.
+        """
         try:
             result = []
-            for dir_name, dirnames, filenames in os.walk(self.path):
+
+            if recursive:
+                for dir_name, dirnames, filenames in os.walk(self.path):
+                    if sort:
+                        dirnames = sorted(dirnames)
+                    for d in dirnames:
+                        result.append(Directory([dir_name, d]))
+                    if sort:
+                        filenames = sorted(filenames)
+                    for f in filenames:
+                        file = File([dir_name, f])
+                        if not skip_system_objects or not file.is_system:
+                            result.append(file)
+                return result
+            else:
+                dirs = []
+                files = []
+                for entry in os.listdir(self.path):
+                    p = self.path + entry
+                    if p.exists_as_directory:
+                        dirs.append(entry)
+                    else:
+                        files.append(entry)
                 if sort:
-                    dirnames = sorted(dirnames)
-                for d in dirnames:
-                    result.append(Directory([dir_name, d]))
-                if sort:
-                    filenames = sorted(filenames)
-                for f in filenames:
-                    file = File([dir_name, f])
+                    dirs = sorted(dirs)
+                    files = sorted(files)
+
+                for d in dirs:
+                    result.append(Directory(self.path + d))
+                for f in files:
+                    file = File(self.path + f)
                     if not skip_system_objects or not file.is_system:
                         result.append(file)
-            return result  # no recurse yet
+                return result
+
         except Exception as e:
             int_die(f"{self}: unable to list the directory: {e}")
-            
+
     def traverse(self, TraversedFileClass=TraversedFile):
         for root, d, files in os.walk(self.path):
             for file in files:
                 yield TraversedFileClass(Path([root, file]))
-                
-

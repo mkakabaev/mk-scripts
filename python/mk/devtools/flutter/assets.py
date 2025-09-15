@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# cSpell: words 
+# cSpell: words
 
 import re
 import math
@@ -43,7 +43,7 @@ class _Image(ReprBuilderMixin):
         else:
             self.scale_postfix = ""
             self.base_name = self.path.file_name
-                
+
     @property
     def has_scale_postfix(self):
         return self.scale_postfix != ""
@@ -67,7 +67,7 @@ class _ImageSubFolder(ReprBuilderMixin):
 
     def configure_repr_builder(self, sb: ToStringBuilder):
         sb.typename = None
-        sb.add_value(Path(self.name)) # let it be formatted as a relative path
+        sb.add_value(Path(self.name))  # let it be formatted as a relative path
 
     def load(self, directory, issues):
         self.directory = directory
@@ -85,18 +85,19 @@ class _ImageSubFolder(ReprBuilderMixin):
                 try:
                     image = _Image(fs_entry.path)
                     if image.has_scale_postfix:
-                        issues.add(f"{self}: {p_name} contains scale postfix in the name")
+                        issues.add(
+                            f"{self}: {p_name} contains scale postfix in the name"
+                        )
                     else:
                         self.images[name] = image
                 except Exception as e:
                     issues.add(f"{self}: Unable to load image {p_name}: {e}")
                 continue
 
-            # all the rest 
+            # all the rest
             issues.add(f"have no idea how to handle {fs_entry}")
 
     def check(self, parent_image, issues):
-
         try:
             image = self.images[parent_image.name]
         except KeyError:
@@ -114,7 +115,9 @@ class _ImageSubFolder(ReprBuilderMixin):
             or image.size.h < expected_size.h - thr
             or image.size.h > expected_size.h + thr
         ):
-            issues.add(f"{self}: Size mismatch for {image}: should be ({self.scale} * {parent_image.size}) ~~> {expected_size} ± {thr}")
+            issues.add(
+                f"{self}: Size mismatch for {image}: should be ({self.scale} * {parent_image.size}) ~~> {expected_size} ± {thr}"
+            )
 
     def detect_unchecked(self, issues):
         for image in self.images.values():
@@ -123,7 +126,8 @@ class _ImageSubFolder(ReprBuilderMixin):
 
 
 class _Issues:
-    '''Simplest way to simplify issues handling code. As of now it just print issues as they are'''
+    """Simplest way to simplify issues handling code. As of now it just print issues as they are"""
+
     def __init__(self, owner):
         self.is_empty = True
         self.owner = owner
@@ -145,7 +149,8 @@ class Assets(ReprBuilderMixin):
 
         # find folders and libs
         folders = {
-            t[0]: _ImageSubFolder(name=t[0], scale=t[1]) for t in [
+            t[0]: _ImageSubFolder(name=t[0], scale=t[1])
+            for t in [
                 ("1.5x", 1.5),
                 ("2.0x", 2.0),
                 ("3.0x", 3.0),
@@ -153,9 +158,9 @@ class Assets(ReprBuilderMixin):
             ]
         }
 
-        image_files = {}
+        root_image_files = {}
 
-        for fs_entry in root_dir.list(sort=True):
+        for fs_entry in root_dir.list(sort=True, recursive=False):
             name = fs_entry.path.base_name
             p_name = fs_entry.path.relative()
 
@@ -167,22 +172,27 @@ class Assets(ReprBuilderMixin):
                     except Exception as e:
                         issues.add(f"Unable to load {fs_entry}: {e}")
                 else:
-                    issues.add(f"Directory {p_name} does not seem to be an image sub-folder")
+                    issues.add(
+                        f"Directory {p_name} does not seem to be an image sub-folder ({', '.join(folders.keys())} expected)"
+                    )
                 continue
 
-            # handle plain files 
+            # handle plain files
             if isinstance(fs_entry, File):
                 try:
                     image = _Image(fs_entry.path)
                     if image.has_scale_postfix:
-                        issues.add(f"It seems you forgot to move {p_name} to sub-folder '{image.scale_postfix}'")
+                        issues.add(
+                            f"It seems you forgot to move {p_name} to sub-folder '{image.scale_postfix}'"
+                        )
                     else:
-                        image_files[name] = image
+                        root_image_files[name] = image
+
                 except Exception as e:
                     issues.add(f"Unable to load image {p_name}: {e}")
                 continue
 
-            # all the rest 
+            # all the rest
             issues.add(f"have no idea how to handle {fs_entry}")
 
         # get existing folders
@@ -194,8 +204,8 @@ class Assets(ReprBuilderMixin):
                 existing_folders.append(f)
 
         # check files
-        for name in sorted(image_files.keys()):
-            image = image_files[name]
+        for name in sorted(root_image_files.keys()):
+            image = root_image_files[name]
             # Console.write(f"Checking {image}")
             for f in existing_folders:
                 f.check(image, issues)
@@ -211,40 +221,41 @@ class Assets(ReprBuilderMixin):
         Console.write("Done (few issues found)", style=ConsoleStyle.WARNING)
         return False
 
-    def distribute_images(self, images_dir): 
-        '''Put all name@Y.Zx.ext images in Y.Zx/name.ext'''
+    def distribute_images(self, images_dir):
+        """Put all name@Y.Zx.ext images in Y.Zx/name.ext"""
         root_dir = Directory(images_dir, must_exist=True, create_if_needed=False)
         Console.write_section_header(f"{self}: Distributing images at {root_dir.path}")
-        issues = _Issues(self)  
+        issues = _Issues(self)
 
         # fixing typical errors
         typo_fixes = {
-            '4x': "4.0x",
-            '2x': "2.0x",
-            '3x': "3.0x",
-            '1.5x': "1.5x",
-            '1,5x': "1.5x",
-            '15x': "1.5x",
-            '15': "1.5x",
+            "4x": "4.0x",
+            "2x": "2.0x",
+            "3x": "3.0x",
+            "1.5x": "1.5x",
+            "1,5x": "1.5x",
+            "15x": "1.5x",
+            "15": "1.5x",
         }
 
-        for fs_entry in root_dir.list():
+        for fs_entry in root_dir.list(recursive=False):
             p_name = fs_entry.path.relative()
 
-            # handle plain files 
+            # handle plain files
             if isinstance(fs_entry, File):
                 try:
                     image = _Image(fs_entry.path)
                 except Exception as e:
                     issues.add(f"Unable to load image {p_name}: {e}")
-                    continue                    
-
-                if not image.has_scale_postfix: 
                     continue
 
+                if not image.has_scale_postfix:
+                    continue
 
                 # finding a destination
-                dest_path = root_dir.path + typo_fixes.get(image.scale_postfix, image.scale_postfix)
+                dest_path = root_dir.path + typo_fixes.get(
+                    image.scale_postfix, image.scale_postfix
+                )
                 if not dest_path.exists_as_directory:
                     issues.add(f"No destination sub-folder found for {image}")
                     continue
@@ -252,11 +263,14 @@ class Assets(ReprBuilderMixin):
 
                 # Moving
                 if full_dest_path.exists:
-                    Console.write(f'{self}: Overwriting {p_name} in {full_dest_path.relative(1)}')
+                    Console.write(
+                        f"{self}: Overwriting {p_name} in {full_dest_path.relative(1)}"
+                    )
                 else:
-                    Console.write(f'{self}: Moving {p_name} to {full_dest_path.relative(1)}')
+                    Console.write(
+                        f"{self}: Moving {p_name} to {full_dest_path.relative(1)}"
+                    )
                 fs_entry.move_to(full_dest_path)
-
 
         if issues.is_empty:
             Console.write("Done (no issues found)")

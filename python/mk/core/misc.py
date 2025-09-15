@@ -3,14 +3,14 @@
 
 import collections.abc
 import os
-from typing import Callable, Any
+from typing import Callable, Any, Optional, TypeVar, Union
 
+T = TypeVar('T')
 
-def _resolve_callable(value):
+def _resolve_callable(value: Union[T, Callable[[], T]]) -> T:
     if callable(value):
-        return value()
+        return value() # type: ignore
     return value
-
 
 class Safe:
     @staticmethod
@@ -39,7 +39,7 @@ class Safe:
         return _resolve_callable(default)
 
     @staticmethod
-    def conditional(condition, value, default=None):
+    def conditional(condition, value: T, default: Optional[T] = None) -> Optional[T]:
         if condition:
             return _resolve_callable(value)
         return _resolve_callable(default)

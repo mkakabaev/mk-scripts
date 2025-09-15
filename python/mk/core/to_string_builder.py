@@ -117,7 +117,6 @@ class ToStringBuilder:
 
 
 class ReprBuilderMixin:
-
     def __repr__(self):
         sb = ToStringBuilder(typename=self.__class__.__name__)
         self.configure_repr_builder(sb)

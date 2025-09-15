@@ -19,11 +19,12 @@ export PYTHONPATH="/Users/murad/dir1/../dirN/mk-scripts/python"
 - [rich](https://pypi.org/project/rich/)
 - [pync](https://pypi.org/project/pync/)
 - [pillow](https://pypi.org/project/pillow/)
+- [pyyaml](https://pypi.org/project/pyyaml/)
 
 **Sample**
 
 ```zsh
-python3.11 -m pip install rich pync pillow python-dateutil
+python3.11 -m pip install rich pync pillow python-dateutil pyyaml
 
 ```
 
