@@ -118,14 +118,14 @@ class ScriptClipboard:
 
     def get_list(self, key: str) -> list:
         if key not in self._data:
-            self._data[key] = []        
+            self._data[key] = []
         return self._data[key]
-    
+
     def remove(self, key: str):
         if key in self._data:
-            del self._data[key]  
-    
-    
+            del self._data[key]
+
+
 class Script:
 
     @classmethod
@@ -232,10 +232,10 @@ class Script:
                 config=config.notification_config,
             )
 
-    @classmethod
-    @property
-    def path(cls) -> Path:
-        return cls._stack.current.path
+    # @classmethod
+    # @property
+    # def path(cls) -> Path:
+    #     return cls._stack.current.path
 
     @classmethod
     def relative_path(cls, subpath=None) -> Path:
